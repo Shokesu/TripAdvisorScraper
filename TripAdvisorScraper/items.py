@@ -1,14 +1,41 @@
 # -*- coding: utf-8 -*-
+'''
+Copyright (c) 2017 Víctor Ruiz Gómez
 
-# Define here the models for your scraped items
-#
-# See documentation in:
-# http://doc.scrapy.org/en/latest/topics/items.html
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+'''
 
 import scrapy
+from scrapy import Item, Field
+from scrapy.loader.processors import TakeFirst, Join
+
+class TripAdvisorHotelInfo(Item):
+    name = Field(output_processor = TakeFirst())
+    phone_number = Field(output_processor = TakeFirst())
+    website = Field(output_processor = TakeFirst())
+    amenities = Field()
+    id = Field(output_processor = TakeFirst())
 
 
-class TripadvisorscraperItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+class TripAdvisorHotelReview(Item):
+    title = Field(output_processor = TakeFirst())
+    rating = Field(output_processor = TakeFirst())
+    text = Field(output_processor = TakeFirst())
+    hotel_id = Field(output_processor = TakeFirst())
+
