@@ -31,6 +31,7 @@ class TripAdvisorHotelInfo(Item):
     website = Field(output_processor = TakeFirst())
     amenities = Field()
     id = Field(output_processor = TakeFirst())
+    address = Field(input_processor = TakeFirst(), output_processor = Join(separator = ', '))
 
 
 class TripAdvisorHotelReview(Item):

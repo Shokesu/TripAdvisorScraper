@@ -106,8 +106,8 @@ class TripAdvisorHotelSpider(Spider):
         :return:
         '''
 
-        return chain(self.parse_hotel_info(response), self.parse_hotel_reviews(response))
-
+        #return chain(self.parse_hotel_info(response), self.parse_hotel_reviews(response))
+        return self.parse_hotel_info(response)
 
     def parse_hotel_info(self, response):
         '''
@@ -119,6 +119,10 @@ class TripAdvisorHotelSpider(Spider):
         loader.add_css('name', '#HEADING::text')
         loader.add_css('phone_number', 'div.phone span:not(.ui_icon)::text')
         loader.add_css('amenities', 'div.amenitiesColumn div.detailsMid div.highlightedAmenity::text', re = '^[ ]*(.+)[ ]*$')
+
+        loader.add_css('address', 'div.address span.street-address::text', re = '^[ ]*(.+)[ ]*$')
+        loader.add_css('address', 'div.address span.locality::text', re = '^[ ]*(.+),[ ]*$')
+        loader.add_css('address', 'div.address span.country-name::text', re = '^[ ]*(.+)[ ]*$')
 
         hasher = sha256()
         hasher.update(response.url.encode())
