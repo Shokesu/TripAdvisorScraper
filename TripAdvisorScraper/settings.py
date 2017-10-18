@@ -19,7 +19,7 @@ NEWSPIDER_MODULE = 'TripAdvisorScraper.spiders'
 #USER_AGENT = 'TripAdvisorScraper (+http://www.yourdomain.com)'
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
@@ -56,6 +56,8 @@ ROBOTSTXT_OBEY = True
 #    'TripAdvisorScraper.middlewares.MyCustomDownloaderMiddleware': 543,
 #}
 
+
+
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
 #EXTENSIONS = {
@@ -88,3 +90,28 @@ ROBOTSTXT_OBEY = True
 #HTTPCACHE_DIR = 'httpcache'
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
+
+# Configuración de Splash
+'''
+DOWNLOADER_MIDDLEWARES = {
+    'scrapy_splash.SplashCookiesMiddleware': 723,
+    'scrapy_splash.SplashMiddleware': 725,
+    'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 810,
+}
+
+SPIDER_MIDDLEWARES = {
+    'scrapy_splash.SplashDeduplicateArgsMiddleware': 100,
+}
+
+DUPEFILTER_CLASS = 'scrapy_splash.SplashAwareDupeFilter'
+HTTPCACHE_STORAGE = 'scrapy_splash.SplashAwareFSCacheStorage'
+
+SPLASH_URL = 'http://localhost:8050/'
+'''
+
+
+# Configuración de los pipelines
+ITEM_PIPELINES = {
+    'TripAdvisorScraper.pipelines.TripAdvisorPipelineJSON': 300
+}
