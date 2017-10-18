@@ -29,9 +29,9 @@ from scrapy.selector import Selector
 from itertools import chain
 from hashlib import sha256
 from re import match
-
 from TripAdvisorScraper.items import TripAdvisorHotelInfo, TripAdvisorHotelReview
-
+import logging
+from os.path import dirname, join
 
 class TripAdvisorHotelSpider(Spider):
     # URL Raíz de TripAdvisor
@@ -51,6 +51,11 @@ class TripAdvisorHotelSpider(Spider):
 
         self.query = q
 
+        log_file_path = join(dirname(dirname(__file__)), 'log', 'tripadvisor_hotels.log')
+        log_file_handler = logging.FileHandler(log_file_path)
+        self.log = logging.getLogger(__name__)
+        self.log.addHandler(log_file_handler)
+
 
 
     def start_requests(self):
@@ -61,16 +66,24 @@ class TripAdvisorHotelSpider(Spider):
         clase scrapy.Request
         '''
         # Construimos una URL para buscar el hotel.
-        url = '{}/Search?{}'.format(self.url_root, urlencode({'q' : self.query}))
+        url = self.build_hotel_search_query(self.query)
 
-        yield Request(url, self.parse_search)
-
-        # yield SplashRequest(url, self.parse_search, endpoint = 'render.html')
-        #yield Request('https://www.tripadvisor.com/Hotel_Review-g60742-d652687-Reviews-or1200-The_Residences_at_Biltmore-Asheville_North_Carolina.html',
-        #              self.parse_reviews)
+        yield Request(url, self.parse_hotel_search)
 
 
-    def parse_search(self, response):
+
+    def build_hotel_search_query(self, terms):
+        '''
+        Construye la url que devuelve una página de búsqueda donde se buscan los términos que
+        se indican como parámetro
+        :param terms:
+        :return:
+        '''
+        url = '{}/Search?{}'.format(self.url_root, urlencode({'q': terms}))
+        return url
+
+
+    def parse_hotel_search(self, response):
         '''
         Parsea el resultado de una búsqueda en TripAdvisor. En caso de que la búsqueda tenga
         algún resultado, obtiene el primer resultado y genera una nueva request para
@@ -78,7 +91,7 @@ class TripAdvisorHotelSpider(Spider):
         '''
 
         try:
-            self.log('Parsing hotel search with terms: {}'.format(self.query))
+            self.log.debug('Parsing hotel search')
             result = response.css('div.info.poi-info div.title::attr(onclick)')
             if len(result) == 0:
                 raise ValueError()
@@ -89,7 +102,7 @@ class TripAdvisorHotelSpider(Spider):
 
             # Obtenemos la URL del hotel
             hotel_url = '{}/{}'.format(self.url_root, result[0])
-            self.log('Search was succesful. Hotel info at {}'.format(hotel_url))
+            self.log.debug('Search was succesful. Hotel info at {}'.format(hotel_url))
 
             # Parseamos información y reviews del hotel
             yield Request(hotel_url, self.parse_hotel)
@@ -106,8 +119,9 @@ class TripAdvisorHotelSpider(Spider):
         :return:
         '''
 
-        #return chain(self.parse_hotel_info(response), self.parse_hotel_reviews(response))
-        return self.parse_hotel_info(response)
+        return chain(self.parse_hotel_info(response), self.parse_hotel_reviews(response),
+                     self.parse_near_hotels(response))
+
 
     def parse_hotel_info(self, response):
         '''
@@ -130,7 +144,7 @@ class TripAdvisorHotelSpider(Spider):
 
         loader.load_item()
 
-        self.log('Succesfully info extracted from "{}" hotel'.format(loader.item['name']))
+        self.log.debug('Succesfully info extracted from "{}" hotel'.format(loader.item['name']))
 
         yield loader.item
 
@@ -166,7 +180,7 @@ class TripAdvisorHotelSpider(Spider):
             yield loader.item
 
         review_offset = int(response.css('div.listContainer p.pagination-details').xpath('.//b[1]//text()').extract_first()) - 1
-        self.log('Succesfully extracted {} reviews from offset {} to {}'.format(num_reviews, review_offset, review_offset + num_reviews - 1))
+        self.log.debug('Succesfully extracted {} reviews from offset {} to {}'.format(num_reviews, review_offset, review_offset + num_reviews - 1))
 
 
         # Procesamos las reviews de la siguiente página.
@@ -174,7 +188,7 @@ class TripAdvisorHotelSpider(Spider):
 
         if len(response.css('div.pagination').xpath('.//span[contains(@class, "next") and not(contains(@class, "disabled"))]')) > 0:
             review_offset = response.css('div.pagination span.next::attr(data-offset)').extract_first()
-            self.log('Processing next review\'s section page, with offset = {}'.format(review_offset))
+            self.log.debug('Processing next review\'s section page, with offset = {}'.format(review_offset))
 
             next_page_url = '{}{}{}'.format(url_match_result.group(1),
                                             'or{}-'.format(review_offset),
@@ -183,5 +197,22 @@ class TripAdvisorHotelSpider(Spider):
             yield Request(url = next_page_url, callback = self.parse_hotel_reviews)
 
         else:
-            self.log('All reviews have been extracted. Last review offset was: {}'.format(review_offset + num_reviews - 1))
+            self.log.debug('All reviews have been extracted. Last review offset was: {}'.format(review_offset + num_reviews - 1))
+
+
+    def parse_near_hotels(self, response):
+        '''
+        Este método analiza de la página de un hotel de TripAdvisor, los hoteles más cercanos a este y
+        los scrapea
+        :param response:
+        :return:
+        '''
+        self.log.debug('Searching for nearby hotels')
+        nearby_hotels = response.css('div.prw_common_btf_nearby_poi_grid.hotel div.poiInfo div.poiName::text').extract()
+        self.log.debug('Founded {} nearby hotels: {}'.format(len(nearby_hotels), ', '.join(nearby_hotels)))
+
+        # Lanzamos requests para screapear hoteles cercanos a este también...
+        for nearby_hotel in nearby_hotels:
+            search_terms = nearby_hotel
+            yield Request(self.build_hotel_search_query(search_terms), self.parse_hotel_search)
 
