@@ -39,4 +39,4 @@ class TripAdvisorHotelReview(Item):
     rating = Field(output_processor = TakeFirst())
     text = Field(output_processor = TakeFirst())
     hotel_id = Field(output_processor = TakeFirst())
-
+    date = Field(output_processor = TakeFirst())
