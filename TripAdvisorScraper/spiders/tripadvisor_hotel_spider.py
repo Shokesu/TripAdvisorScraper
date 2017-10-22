@@ -32,6 +32,7 @@ from re import match
 from TripAdvisorScraper.items import TripAdvisorHotelInfo, TripAdvisorHotelReview
 import logging
 from os.path import dirname, join
+from datetime import datetime
 
 class TripAdvisorHotelSpider(Spider):
     # URL Raíz de TripAdvisor
@@ -100,12 +101,13 @@ class TripAdvisorHotelSpider(Spider):
             if len(result) == 0:
                 raise ValueError()
 
-            # Obtenemos la URL del hotel
-            hotel_url = '{}/{}'.format(self.url_root, result[0])
-            self.log.debug('Search was succesful. Hotel info at {}'.format(hotel_url))
+            for entry in result:
+                # Obtenemos la URL del hotel
+                hotel_url = '{}/{}'.format(self.url_root, entry)
+                self.log.debug('Search was succesful. Hotel info at {}'.format(hotel_url))
 
-            # Parseamos información y reviews del hotel
-            yield Request(hotel_url, self.parse_hotel)
+                # Parseamos información y reviews del hotel
+                yield Request(hotel_url, self.parse_hotel)
 
 
         except ValueError:
@@ -166,18 +168,32 @@ class TripAdvisorHotelSpider(Spider):
         # Procesamos las reviews de la página
         num_reviews = len(response.css('div.listContainer div.review-container').extract())
         for i in range(0, num_reviews):
-            review_selector = response.css('div.listContainer')
-            review_selector = review_selector.xpath(
-                './/div[contains(@class, "review-container")][{}]'.format(i+1))
+            try:
+                review_selector = response.css('div.listContainer')
+                review_selector = review_selector.xpath(
+                    './/div[contains(@class, "review-container")][{}]'.format(i+1))
 
-            loader = ItemLoader(item = TripAdvisorHotelReview(), selector = review_selector)
-            loader.add_css('title', 'span.noQuotes::text')
-            loader.add_css('text', 'div.prw_reviews_text_summary_hsx p.partial_entry::text')
-            loader.add_css('rating', 'span.ui_bubble_rating', re='class="[^\"]*bubble_(\d+)[^\"]*"')
-            loader.add_value('hotel_id', hotel_id)
+                loader = ItemLoader(item = TripAdvisorHotelReview(), selector = review_selector)
+                loader.add_css('title', 'span.noQuotes::text')
+                loader.add_css('text', 'div.prw_reviews_text_summary_hsx p.partial_entry::text')
+                loader.add_css('rating', 'span.ui_bubble_rating', re='class="[^\"]*bubble_(\d+)[^\"]*"')
+                loader.add_value('hotel_id', hotel_id)
 
-            loader.load_item()
-            yield loader.item
+                date = review_selector.css('span.ratingDate::attr(title)').extract_first()
+                result = match('^[ ]*([^ ]+)[ ]+(\d+)[ ]*\,[ ]*([^ ]+)[ ]*$', date)
+                month_str, day, year = result.groups()
+                month_str = month_str.lower()
+                month = dict(zip(['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',
+                                  'september', 'october', 'november', 'december'], range(0, 12)))[month_str]
+
+                loader.add_value('date', datetime(year = int(year), month = month, day = int(day)).date().isoformat())
+
+
+
+                loader.load_item()
+                yield loader.item
+            except:
+                pass
 
         review_offset = int(response.css('div.listContainer p.pagination-details').xpath('.//b[1]//text()').extract_first()) - 1
         self.log.debug('Succesfully extracted {} reviews from offset {} to {}'.format(num_reviews, review_offset, review_offset + num_reviews - 1))
