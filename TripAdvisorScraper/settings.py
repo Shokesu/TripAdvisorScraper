@@ -23,7 +23,7 @@ ROBOTSTXT_OBEY = False
 
 
 # Configuración de Splash
-'''
+
 DOWNLOADER_MIDDLEWARES = {
     'scrapy_splash.SplashCookiesMiddleware': 723,
     'scrapy_splash.SplashMiddleware': 725,
@@ -38,7 +38,7 @@ DUPEFILTER_CLASS = 'scrapy_splash.SplashAwareDupeFilter'
 HTTPCACHE_STORAGE = 'scrapy_splash.SplashAwareFSCacheStorage'
 
 SPLASH_URL = 'http://localhost:8050/'
-'''
+
 
 
 # Configuración de los pipelines
