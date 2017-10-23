@@ -33,11 +33,9 @@ from TripAdvisorScraper.items import TripAdvisorHotelInfo, TripAdvisorHotelRevie
 import logging
 from os.path import dirname, join
 from datetime import datetime
+from .requests import *
 
 class TripAdvisorHotelSpider(Spider):
-    # URL Raíz de TripAdvisor
-    url_root = 'https://www.tripadvisor.com'
-
     # Nombre de nuestra araña
     name = 'TripAdvisorHotelSpider'
 
@@ -66,29 +64,13 @@ class TripAdvisorHotelSpider(Spider):
         :return: Devuelve un generador, que genera instancias de la
         clase scrapy.Request
         '''
-        # Construimos una URL para buscar el hotel.
-        url = self.build_hotel_search_query(self.query)
-
-        yield Request(url, self.parse_hotel_search)
-
-
-
-    def build_hotel_search_query(self, terms):
-        '''
-        Construye la url que devuelve una página de búsqueda donde se buscan los términos que
-        se indican como parámetro
-        :param terms:
-        :return:
-        '''
-        url = '{}/Search?{}'.format(self.url_root, urlencode({'q': terms}))
-        return url
+        yield TripAdvisorRequests.search_hotels_by_terms(terms = self.query, callback = self.parse_hotel_search)
 
 
     def parse_hotel_search(self, response):
         '''
-        Parsea el resultado de una búsqueda en TripAdvisor. En caso de que la búsqueda tenga
-        algún resultado, obtiene el primer resultado y genera una nueva request para
-        scrapear los datos del hotel asociado (se invoca como callback el método parse_hotel)
+        Parsea el resultado de una búsqueda en TripAdvisor. Por cada resultado (hotel encontrado)
+        genera una nueva request.
         '''
 
         try:
@@ -102,16 +84,19 @@ class TripAdvisorHotelSpider(Spider):
                 raise ValueError()
 
             for entry in result:
+                path, params = match('^(.*)\?(.*)$', entry).groups()
+
                 # Obtenemos la URL del hotel
-                hotel_url = '{}/{}'.format(self.url_root, entry)
-                self.log.debug('Search was succesful. Hotel info at {}'.format(hotel_url))
+                self.log.debug('Search was succesful. Hotel info at {}'.format(TripAdvisorRequests.get_resource_url(path)))
 
                 # Parseamos información y reviews del hotel
-                yield Request(hotel_url, self.parse_hotel)
-
+                yield TripAdvisorRequests.get_hotel_page(path = path, params = params, callback = self.parse_hotel)
 
         except ValueError:
             raise ValueError('No hotel found with the search terms: {}'.format(self.query))
+
+        # Parseamos la siguiente página de resultados
+
 
     def parse_hotel(self, response):
         '''
@@ -122,7 +107,6 @@ class TripAdvisorHotelSpider(Spider):
         '''
 
         return chain(self.parse_hotel_info(response), self.parse_hotel_reviews(response),
-                     self.parse_near_hotels(response))
 
 
     def parse_hotel_info(self, response):
@@ -209,26 +193,13 @@ class TripAdvisorHotelSpider(Spider):
             next_page_url = '{}{}{}'.format(url_match_result.group(1),
                                             'or{}-'.format(review_offset),
                                             url_match_result.group(3))
+            result = match('^https?\:\/\/[^\/]+\/([^\?]+)(\?(.*))?$', next_page_url)
+            path = result.group(1)
+            params = result.group(3)
+
             # Realizamos la request a la siguiente página.
-            yield Request(url = next_page_url, callback = self.parse_hotel_reviews)
+            yield TripAdvisorRequests.get_hotel_page(path = path, params = params, callback = self.parse_hotel_reviews)
 
         else:
             self.log.debug('All reviews have been extracted. Last review offset was: {}'.format(review_offset + num_reviews - 1))
-
-
-    def parse_near_hotels(self, response):
-        '''
-        Este método analiza de la página de un hotel de TripAdvisor, los hoteles más cercanos a este y
-        los scrapea
-        :param response:
-        :return:
-        '''
-        self.log.debug('Searching for nearby hotels')
-        nearby_hotels = response.css('div.prw_common_btf_nearby_poi_grid.hotel div.poiInfo div.poiName::text').extract()
-        self.log.debug('Founded {} nearby hotels: {}'.format(len(nearby_hotels), ', '.join(nearby_hotels)))
-
-        # Lanzamos requests para screapear hoteles cercanos a este también...
-        for nearby_hotel in nearby_hotels:
-            search_terms = nearby_hotel
-            yield Request(self.build_hotel_search_query(search_terms), self.parse_hotel_search)
 
