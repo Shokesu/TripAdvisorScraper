@@ -49,7 +49,9 @@ class TripAdvisorPipelineJSON:
         if isinstance(item, TripAdvisorHotelReview):
             return join(feed_files_dir, 'tripadvisor_reviews.json')
         elif isinstance(item, TripAdvisorHotelInfo):
-            return join(feed_files_dir, 'tripadvisor_hotels_info.json')
+            return join(feed_files_dir, 'tripadvisor_info.json')
+        elif isinstance(item, TripAdvisorHotelDeals):
+            return join(feed_files_dir, 'tripadvisor_deals.json')
         return join(feed_files_dir, 'items.json')
 
 
