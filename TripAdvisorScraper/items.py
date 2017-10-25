@@ -26,17 +26,22 @@ from scrapy import Item, Field
 from scrapy.loader.processors import TakeFirst, Join
 
 class TripAdvisorHotelInfo(Item):
-    name = Field(output_processor = TakeFirst())
-    phone_number = Field(output_processor = TakeFirst())
-    website = Field(output_processor = TakeFirst())
-    amenities = Field()
-    id = Field(output_processor = TakeFirst())
-    address = Field(input_processor = TakeFirst(), output_processor = Join(separator = ', '))
+    name = Field(output_processor = TakeFirst(), mandatory = True)
+    phone_number = Field(output_processor = TakeFirst(), mandatory = True)
+    website = Field(output_processor = TakeFirst(), mandatory = True)
+    amenities = Field(mandatory = True)
+    id = Field(output_processor = TakeFirst(), mandatory = True)
+    address = Field(input_processor = TakeFirst(), output_processor = Join(separator = ', '), mandatory = True)
 
 
 class TripAdvisorHotelReview(Item):
-    title = Field(output_processor = TakeFirst())
-    rating = Field(output_processor = TakeFirst())
-    text = Field(output_processor = TakeFirst())
-    hotel_id = Field(output_processor = TakeFirst())
-    date = Field(output_processor = TakeFirst())
+    title = Field(output_processor = TakeFirst(), mandatory = True)
+    rating = Field(output_processor = TakeFirst(), mandatory = True)
+    text = Field(output_processor = TakeFirst(), mandatory = True)
+    hotel_id = Field(output_processor = TakeFirst(), mandatory = True)
+    date = Field(output_processor = TakeFirst(), mandatory = True)
+
+class TripAdvisorHotelDeals(Item):
+    hotel_id = Field(output_processor = TakeFirst(), mandatory = True)
+    provider_name = Field(output_processor = TakeFirst(), mandatory = True)
+    price = Field(output_processor = TakeFirst(), mandatory = True)
