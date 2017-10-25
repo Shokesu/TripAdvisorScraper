@@ -107,8 +107,8 @@ class TripAdvisorHotelSpider(Spider):
         :return:
         '''
 
-        #return chain(self.parse_hotel_info(response), self.parse_hotel_reviews(response))
-        return self.parse_hotel_deals(response)
+        return chain(self.parse_hotel_info(response), self.parse_hotel_reviews(response),
+                     self.parse_hotel_deals(response))
 
 
     def parse_hotel_info(self, response):
