@@ -158,7 +158,7 @@ class TripAdvisorHotelSpider(Spider):
 
                 loader = ItemLoader(item = TripAdvisorHotelDeals(), selector = deal_selector)
                 loader.add_css('provider_name', 'span.providerName::attr(title)')
-                loader.add_css('price', 'span.price::attr(title)')
+                loader.add_css('price', 'span.price::attr(title)', re = '(\d+)')
                 loader.add_value('hotel_id', hotel_id)
 
                 item = loader.load_item()
