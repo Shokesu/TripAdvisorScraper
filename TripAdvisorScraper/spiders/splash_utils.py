@@ -321,7 +321,7 @@ class Click(Code):
         #code = ElementReady(selector) + ElementReadyToClick(selector) +\
         #       LuaObjectMethodCallCode(object = LuaObjectMethodCallCode(object = 'splash', method = 'select', params = ['"{}"'.format(selector)]),
         #                               method = 'mouse_click')
-        #
+
         code = ElementReady(selector) +\
                LuaObjectMethodCallCode(object = LuaObjectMethodCallCode(object = 'splash', method = 'select', params = ['"{}"'.format(selector)]),
                                        method = 'mouse_click')

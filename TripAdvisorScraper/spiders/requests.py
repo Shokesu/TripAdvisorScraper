@@ -23,7 +23,7 @@ SOFTWARE.
 
 from scrapy import Request
 from urllib.parse import urlencode
-from .splash_utils import splash_request
+from .splash_utils import splash_request, Wait, ElementReady, SendText, Click
 
 
 class TripAdvisorRequests:
@@ -87,8 +87,6 @@ class TripAdvisorRequests:
 
 
 
-
-
     @classmethod
     def search_hotels_by_terms(cls, terms, callback):
         '''
@@ -104,16 +102,22 @@ class TripAdvisorRequests:
 
 
     @classmethod
-    def get_hotel_page(cls, process_deals = False, *args, **kwargs):
+    def get_hotel_page(cls, fetch_deals = False, *args, **kwargs):
         '''
         Instancia una request a la página con la información de un hotel y sus reviews
-        e.g de una página de un hotel en trip advisor:
+        de una página de un hotel en trip advisor
+        e.g:
         https://www.tripadvisor.com/Hotel_Review-g187520-d233664-Reviews-Hotel_Blanca_de_Navarra-Pamplona_Navarra.html
-        :param process_deals Es un parámetro que si se establece a True, activa el preprocesamiento
-        de la página web para cargar contenido dinámico de la misma, ejecutando el código javascript
-        (usando splash). Además si esta a True, estarán disponibles las "deals" del hotel en el
-        DOM de la web para ser escrapeadas.
+        :param fetch_deals Es un parámetro que si se establece a True, devuelve en el DOM de la
+        página, las "deals" del hotel (la request usa splash para cargar contenido dinámico de
+        la página)
         :return:
         '''
+        use_splash = fetch_deals
+
+        if use_splash:
+            actions = ElementReady('div.premium_offers_area.viewDealChevrons')
+            return cls.splash_request(actions = actions, *args, **kwargs)
+
         return cls.request(*args, **kwargs)
 

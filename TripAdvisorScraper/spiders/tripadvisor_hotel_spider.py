@@ -23,13 +23,13 @@ SOFTWARE.
 import scrapy
 from scrapy import Spider, Request
 from scrapy_splash import SplashRequest
-from scrapy.loader import ItemLoader
+from TripAdvisorScraper.item_loader import ItemLoader
 from urllib.parse import urlencode
 from scrapy.selector import Selector
 from itertools import chain
 from hashlib import sha256
 from re import match
-from TripAdvisorScraper.items import TripAdvisorHotelInfo, TripAdvisorHotelReview
+from TripAdvisorScraper.items import TripAdvisorHotelInfo, TripAdvisorHotelReview, TripAdvisorHotelDeals
 import logging
 from os.path import dirname, join
 from datetime import datetime
@@ -90,7 +90,8 @@ class TripAdvisorHotelSpider(Spider):
                 self.log.debug('Search was succesful. Hotel info at {}'.format(TripAdvisorRequests.get_resource_url(path)))
 
                 # Parseamos información y reviews del hotel
-                yield TripAdvisorRequests.get_hotel_page(path = path, params = params, callback = self.parse_hotel)
+                yield TripAdvisorRequests.get_hotel_page(path = path, params = params, callback = self.parse_hotel,
+                                                         fetch_deals = True)
 
         except ValueError:
             raise ValueError('No hotel found with the search terms: {}'.format(self.query))
@@ -106,7 +107,8 @@ class TripAdvisorHotelSpider(Spider):
         :return:
         '''
 
-        return chain(self.parse_hotel_info(response), self.parse_hotel_reviews(response),
+        #return chain(self.parse_hotel_info(response), self.parse_hotel_reviews(response))
+        return self.parse_hotel_deals(response)
 
 
     def parse_hotel_info(self, response):
@@ -133,6 +135,39 @@ class TripAdvisorHotelSpider(Spider):
         self.log.debug('Succesfully info extracted from "{}" hotel'.format(loader.item['name']))
 
         yield loader.item
+
+
+    def parse_hotel_deals(self, response):
+        with open('web.html', 'wb') as fh:
+            fh.write(response.body)
+        '''
+        Procesa la información de las "deals" de un hotel en TripAdvisor.
+        :param response:
+        :return:
+        '''
+        hasher = sha256()
+        hasher.update(response.url.encode())
+        hotel_id = hasher.hexdigest()
+
+        num_deals = len(response.css('div.premium_offers_area.viewDealChevrons div.prw_meta_view_all_text_links').xpath('.//div[contains(@class, "offer") and contains(@class, "textLink") and not(contains(@class, "unclickable"))]'))
+        for i in range(0, num_deals):
+            try:
+                deal_selector = response.css('div.premium_offers_area.viewDealChevrons div.prw_meta_view_all_text_links')
+                deal_selector = deal_selector.xpath(
+                    './/div[contains(@class, "offer") and contains(@class, "textLink") and not(contains(@class, "unclickable"))][{}]'.format(i + 1))
+
+                loader = ItemLoader(item = TripAdvisorHotelDeals(), selector = deal_selector)
+                loader.add_css('provider_name', 'span.providerName::attr(title)')
+                loader.add_css('price', 'span.price::attr(title)')
+                loader.add_value('hotel_id', hotel_id)
+
+                item = loader.load_item()
+                yield item
+
+            except:
+                pass
+        if num_deals > 0:
+            self.log.debug('Succesfully extracted {} deals from hotel info'.format(num_deals))
 
 
     def parse_hotel_reviews(self, response):
