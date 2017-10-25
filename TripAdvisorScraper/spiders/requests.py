@@ -24,6 +24,7 @@ SOFTWARE.
 from scrapy import Request
 from urllib.parse import urlencode
 from .splash_utils import splash_request, Wait, ElementReady, SendText, Click
+from os.path import dirname, join
 
 
 class TripAdvisorRequests:
@@ -120,4 +121,40 @@ class TripAdvisorRequests:
             return cls.splash_request(actions = actions, *args, **kwargs)
 
         return cls.request(*args, **kwargs)
+
+
+
+class GMapRequests:
+    # URL raíz de la API Google Maps
+    root_url = 'https://maps.googleapis.com/maps/api/geocode/json'
+
+    @classmethod
+    def get_root_url(cls):
+        return cls.root_url
+
+
+    '''
+    Esta clase provee una serie de métodos para hacer requests a la API de Google Maps
+    '''
+    @classmethod
+    def search_place(cls, address, callback):
+        '''
+        Realiza una request a la API de Google Maps para buscar una localización o lugar.
+        :param address: Es un lugar o dirección
+        :param callback:
+        :return:
+        '''
+        with open(join(dirname(dirname(__file__)), 'keys', 'gmaps_api_key.txt'), 'r') as fh:
+            api_key = fh.read()
+        params = {
+            'address' : address,
+            'key' : api_key
+        }
+
+        url = '{}?{}'.format(cls.get_root_url(), urlencode(params))
+
+        return Request(url = url, callback = callback)
+
+
+
 

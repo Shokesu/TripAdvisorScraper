@@ -26,12 +26,11 @@ from scrapy import Item, Field
 from scrapy.loader.processors import TakeFirst, Join
 
 class TripAdvisorHotelInfo(Item):
-    name = Field(output_processor = TakeFirst(), mandatory = True)
-    phone_number = Field(output_processor = TakeFirst(), mandatory = True)
-    website = Field(output_processor = TakeFirst(), mandatory = True)
-    amenities = Field(mandatory = True)
-    id = Field(output_processor = TakeFirst(), mandatory = True)
-    address = Field(input_processor = TakeFirst(), output_processor = Join(separator = ', '), mandatory = True)
+    name = Field(output_processor = TakeFirst())
+    phone_number = Field(output_processor = TakeFirst())
+    amenities = Field()
+    id = Field(output_processor = TakeFirst())
+    address = Field(input_processor = TakeFirst(), output_processor = Join(separator = ', '))
 
 
 class TripAdvisorHotelReview(Item):
@@ -45,3 +44,9 @@ class TripAdvisorHotelDeals(Item):
     hotel_id = Field(output_processor = TakeFirst(), mandatory = True)
     provider_name = Field(output_processor = TakeFirst(), mandatory = True)
     price = Field(output_processor = TakeFirst(), mandatory = True)
+
+
+class TripAdvisorHotelGeolocation(Item):
+    hotel_id = Field(output_processor = TakeFirst())
+    longitude = Field(output_processor = TakeFirst())
+    latitude = Field(output_processor = TakeFirst())

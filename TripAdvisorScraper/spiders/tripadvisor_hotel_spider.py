@@ -29,11 +29,12 @@ from scrapy.selector import Selector
 from itertools import chain
 from hashlib import sha256
 from re import match
-from TripAdvisorScraper.items import TripAdvisorHotelInfo, TripAdvisorHotelReview, TripAdvisorHotelDeals
+from TripAdvisorScraper.items import TripAdvisorHotelInfo, TripAdvisorHotelReview, TripAdvisorHotelDeals, TripAdvisorHotelGeolocation
 import logging
 from os.path import dirname, join
 from datetime import datetime
 from .requests import *
+import json
 
 class TripAdvisorHotelSpider(Spider):
     # Nombre de nuestra araña
@@ -83,6 +84,7 @@ class TripAdvisorHotelSpider(Spider):
             if len(result) == 0:
                 raise ValueError()
 
+            result = [result[0]]
             for entry in result:
                 path, params = match('^(.*)\?(.*)$', entry).groups()
 
@@ -107,9 +109,9 @@ class TripAdvisorHotelSpider(Spider):
         :return:
         '''
 
-        return chain(self.parse_hotel_info(response), self.parse_hotel_reviews(response),
-                     self.parse_hotel_deals(response))
-
+        #return chain(self.parse_hotel_info(response), self.parse_hotel_reviews(response),
+        #             self.parse_hotel_deals(response))
+        return self.parse_hotel_info(response)
 
     def parse_hotel_info(self, response):
         '''
@@ -130,11 +132,15 @@ class TripAdvisorHotelSpider(Spider):
         hasher.update(response.url.encode())
         loader.add_value('id', hasher.hexdigest())
 
-        loader.load_item()
+        item = loader.load_item()
 
         self.log.debug('Succesfully info extracted from "{}" hotel'.format(loader.item['name']))
 
-        yield loader.item
+        yield item
+
+        geo_request = GMapRequests.search_place(address = item.get('address'), callback = self.parse_hotel_geolocation)
+        geo_request.meta['hotel_id'] = item.get('id')
+        yield geo_request
 
 
     def parse_hotel_deals(self, response):
@@ -208,7 +214,6 @@ class TripAdvisorHotelSpider(Spider):
                 loader.add_value('date', datetime(year = int(year), month = month, day = int(day)).date().isoformat())
 
 
-
                 loader.load_item()
                 yield loader.item
             except:
@@ -238,3 +243,23 @@ class TripAdvisorHotelSpider(Spider):
         else:
             self.log.debug('All reviews have been extracted. Last review offset was: {}'.format(review_offset + num_reviews - 1))
 
+
+    def parse_hotel_geolocation(self, response):
+        '''
+        Este método parsea la geolocalización de un hotel de TripAdvisor
+
+        :param response:
+        :return:
+        '''
+        self.log.debug('Parsing hotel gelocation using Google Maps API: {}'.format(response.url))
+
+        data = json.loads(response.text)['results'][0]
+
+        loader = ItemLoader(item = TripAdvisorHotelGeolocation(), response = response)
+        loader.add_value('latitude', data['geometry']['location']['lat'])
+        loader.add_value('longitude', data['geometry']['location']['lng'])
+        loader.add_value('hotel_id', response.meta['hotel_id'])
+
+        item = loader.load_item()
+
+        yield item
