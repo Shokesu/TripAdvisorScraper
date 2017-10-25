@@ -84,7 +84,6 @@ class TripAdvisorHotelSpider(Spider):
             if len(result) == 0:
                 raise ValueError()
 
-            result = [result[0]]
             for entry in result:
                 path, params = match('^(.*)\?(.*)$', entry).groups()
 
@@ -109,9 +108,9 @@ class TripAdvisorHotelSpider(Spider):
         :return:
         '''
 
-        #return chain(self.parse_hotel_info(response), self.parse_hotel_reviews(response),
-        #             self.parse_hotel_deals(response))
-        return self.parse_hotel_info(response)
+        return chain(self.parse_hotel_info(response), self.parse_hotel_reviews(response),
+                     self.parse_hotel_deals(response))
+
 
     def parse_hotel_info(self, response):
         '''
