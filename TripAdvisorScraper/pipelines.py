@@ -22,11 +22,9 @@ SOFTWARE.
 
 
 
-from TripAdvisorScraper.items import *
-
 from os.path import join, dirname
 import json
-
+from .item_db import TripAdvisorDB
 
 class TripAdvisorPipelineJSON:
     '''
@@ -35,31 +33,32 @@ class TripAdvisorPipelineJSON:
     '''
 
     def __init__(self):
-        pass
+        self.feed_files = dict([(item_type, file.replace('..', join(dirname(__file__), 'data'))) for item_type, file in {
+            'TripAdvisorHotelReview' : '../tripadvisor_reviews.json',
+            'TripAdvisorHotelInfo' : '../tripadvisor_info.json',
+            'TripAdvisorHotelDeals' : '../tripadvisor_deals.json',
+            'TripAdvisorHotelGeolocation' : '../tripadvisor_geo.json',
+            'Default' : '../items.json'
+        }.items()])
 
-    def get_feed_file_for_item(self, item):
+
+    def get_feed_file(self, item):
         '''
-        Este método devuelve la ruta del fichero donde debe almacenarse el item
-        que se indica como parámetro.
+        Devuelve la ruta del fichero donde se almacenará el item que se indica como
+        parámetro
         :param item:
         :return:
         '''
-        feed_files_dir = join(dirname(__file__), 'data')
-
-        if isinstance(item, TripAdvisorHotelReview):
-            return join(feed_files_dir, 'tripadvisor_reviews.json')
-        elif isinstance(item, TripAdvisorHotelInfo):
-            return join(feed_files_dir, 'tripadvisor_info.json')
-        elif isinstance(item, TripAdvisorHotelDeals):
-            return join(feed_files_dir, 'tripadvisor_deals.json')
-        elif isinstance(item, TripAdvisorHotelGeolocation):
-            return join(feed_files_dir, 'tripadvisor_geo.json')
-        return join(feed_files_dir, 'items.json')
-
+        feed_file = (self.feed_files[item.__class__.__name__]
+                     if item.__class__.__name__ in self.feed_files
+                     else self.feed_files['Default'])
+        return feed_file
 
 
     def open_spider(self, spider):
-        pass
+        for file_path in self.feed_files.values():
+            with open(file_path, 'wb') as fh:
+                pass
 
     def close_spider(self, spider):
         pass
@@ -72,6 +71,36 @@ class TripAdvisorPipelineJSON:
         :param spider:
         :return:
         '''
+
+        if item is None:
+            return
+
         # Almacenamos el item en su fichero correspondiente
-        with open(self.get_feed_file_for_item(item), 'a') as item_file_handler:
+        with open(self.get_feed_file(item), 'a') as item_file_handler:
             print(json.dumps(dict(item)), file = item_file_handler)
+
+
+
+class TripAdvisorPipelineDB:
+    '''
+    Esta clase permite almacenar los items scrapeados de TripAdvisor en una base de datos
+    sqlite.
+    '''
+    def open_spider(self, spider):
+        # Conectamos con la base de datos
+        self.db = TripAdvisorDB()
+
+    def close_spider(self, spider):
+        # Cerramos la conexión con la base de datos
+        self.db.close()
+
+    def process_item(self, item, spider):
+        '''
+        Es invocado cuando un nuevo item se escrapea y debe almacenarse en la base de datos
+        :param item:
+        :param spider:
+        :return:
+        '''
+        if not item is None:
+            self.db.save_item(item)
+

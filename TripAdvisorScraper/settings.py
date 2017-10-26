@@ -43,7 +43,8 @@ SPLASH_URL = 'http://localhost:8050/'
 
 # Configuración de los pipelines
 ITEM_PIPELINES = {
-    'TripAdvisorScraper.pipelines.TripAdvisorPipelineJSON': 300
+    'TripAdvisorScraper.pipelines.TripAdvisorPipelineDB' : 300,
+    'TripAdvisorScraper.pipelines.TripAdvisorPipelineJSON': 301
 }
 
 
