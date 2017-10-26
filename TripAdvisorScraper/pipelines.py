@@ -25,6 +25,10 @@ SOFTWARE.
 from os.path import join, dirname
 import json
 from .item_db import TripAdvisorDB
+from  .spiders.tripadvisor_hotel_spider import TripAdvisorHotelSpider
+import logging
+
+
 
 class TripAdvisorPipelineJSON:
     '''
@@ -56,12 +60,16 @@ class TripAdvisorPipelineJSON:
 
 
     def open_spider(self, spider):
+        if not isinstance(spider, TripAdvisorHotelSpider):
+            return
         for file_path in self.feed_files.values():
             with open(file_path, 'wb') as fh:
                 pass
 
     def close_spider(self, spider):
-        pass
+        if not isinstance(spider, TripAdvisorHotelSpider):
+            return
+
 
     def process_item(self, item, spider):
         '''
@@ -72,12 +80,13 @@ class TripAdvisorPipelineJSON:
         :return:
         '''
 
-        if item is None:
-            return
-
         # Almacenamos el item en su fichero correspondiente
-        with open(self.get_feed_file(item), 'a') as item_file_handler:
-            print(json.dumps(dict(item)), file = item_file_handler)
+        if not item is None and isinstance(spider, TripAdvisorHotelSpider):
+            with open(self.get_feed_file(item), 'a') as item_file_handler:
+                print(json.dumps(dict(item)), file = item_file_handler)
+
+        return item
+
 
 
 
@@ -87,12 +96,18 @@ class TripAdvisorPipelineDB:
     sqlite.
     '''
     def open_spider(self, spider):
-        # Conectamos con la base de datos
+        if not isinstance(spider, TripAdvisorHotelSpider):
+            return
+
         self.db = TripAdvisorDB()
+        self.db.reset()
+
 
     def close_spider(self, spider):
-        # Cerramos la conexión con la base de datos
+        if not isinstance(spider, TripAdvisorHotelSpider):
+            return
         self.db.close()
+
 
     def process_item(self, item, spider):
         '''
@@ -101,6 +116,54 @@ class TripAdvisorPipelineDB:
         :param spider:
         :return:
         '''
-        if not item is None:
+        if not item is None and isinstance(spider, TripAdvisorHotelSpider):
             self.db.save_item(item)
 
+        return item
+
+
+class TripAdvisorPipelineBulkJSON:
+    '''
+    Es un pipeline especial que sirve para almacenar los items scrapeados en un único fichero JSON.
+    Los datos tendrán la siguiente estructura:
+    [
+        {
+            'info' : {
+                'name' : ...
+                'phone_number' : ...
+                'amenities' : ...
+                'address' : ...
+                'geo' : {
+                    'latitude' : ...
+                    'longitude' : ...
+                }
+            },
+            'deals' : {
+                'provider_name' : ...
+                'price' : ...
+            },
+            'reviews' : {
+                'title' : ...
+                'text' : ...
+                'rating' : ...
+                'date' : ...
+            }
+        }
+    ]
+
+    El fichero JSON se generará cuando se hayan scrapeado todos los datos.
+    '''
+    def close_spider(self, spider):
+        if not isinstance(spider, TripAdvisorHotelSpider):
+            return
+
+        with TripAdvisorDB() as db:
+            data = db.get_everything()
+            with open(join(dirname(__file__), 'data', 'tripadvisor_bulk.json'), 'w') as fh:
+                fh.write(json.dumps(data))
+
+    def open_spider(self, spider):
+        pass
+
+    def process_item(self, item, spider):
+        return item

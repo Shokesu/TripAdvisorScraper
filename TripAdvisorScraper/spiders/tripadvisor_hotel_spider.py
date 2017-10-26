@@ -84,7 +84,7 @@ class TripAdvisorHotelSpider(Spider):
             if len(result) == 0:
                 raise ValueError()
 
-            result = [result[0]]
+            # result = [result[0]]
             for entry in result:
                 path, params = match('^(.*)\?(.*)$', entry).groups()
 
@@ -108,9 +108,8 @@ class TripAdvisorHotelSpider(Spider):
         :param response:
         :return:
         '''
-
-        return chain(self.parse_hotel_info(response), self.parse_hotel_reviews(response),
-                     self.parse_hotel_deals(response))
+        return chain(self.parse_hotel_info(response), self.parse_hotel_deals(response),
+                     self.parse_hotel_reviews(response))
 
 
     def parse_hotel_info(self, response):
@@ -144,8 +143,6 @@ class TripAdvisorHotelSpider(Spider):
 
 
     def parse_hotel_deals(self, response):
-        with open('web.html', 'wb') as fh:
-            fh.write(response.body)
         '''
         Procesa la información de las "deals" de un hotel en TripAdvisor.
         :param response:
@@ -182,13 +179,13 @@ class TripAdvisorHotelSpider(Spider):
         :param response:
         :return:
         '''
-        url_match_result = match(('^(.*\/{})(or\d+\-)?(.*)$'.format('{0}' * 4)).format('[^-]+\-'), response.url)
-        url = url_match_result.group(1) + url_match_result.group(3)
-
-        hasher = sha256()
-        hasher.update(url.encode())
-        hasher.hexdigest()
-        hotel_id = hasher.hexdigest()
+        if not 'hotel_id' in response.meta:
+            hasher = sha256()
+            hasher.update(response.url.encode())
+            hasher.hexdigest()
+            hotel_id = hasher.hexdigest()
+        else:
+            hotel_id = response.meta['hotel_id']
 
         # Procesamos las reviews de la página
         num_reviews = len(response.css('div.listContainer div.review-container').extract())
@@ -224,22 +221,25 @@ class TripAdvisorHotelSpider(Spider):
 
 
         # Procesamos las reviews de la siguiente página.
-
-
         if len(response.css('div.pagination').xpath('.//span[contains(@class, "next") and not(contains(@class, "disabled"))]')) > 0:
             review_offset = response.css('div.pagination span.next::attr(data-offset)').extract_first()
             self.log.debug('Processing next review\'s section page, with offset = {}'.format(review_offset))
 
+            url_match_result = match(('^(.*\/{})(or\d+\-)?(.*)$'.format('{0}' * 4)).format('[^-]+\-'), response.url)
+            url = url_match_result.group(1) + url_match_result.group(3)
             next_page_url = '{}{}{}'.format(url_match_result.group(1),
                                             'or{}-'.format(review_offset),
                                             url_match_result.group(3))
+            self.log.debug('Next reviews page in {}'.format(next_page_url))
             result = match('^https?\:\/\/[^\/]+\/([^\?]+)(\?(.*))?$', next_page_url)
             path = result.group(1)
             params = result.group(3)
 
             # Realizamos la request a la siguiente página.
-            yield TripAdvisorRequests.get_hotel_page(path = path, params = params, callback = self.parse_hotel_reviews)
+            request = TripAdvisorRequests.get_hotel_page(path = path, params = params, callback = self.parse_hotel_reviews)
+            request.meta['hotel_id'] = hotel_id
 
+            yield request
         else:
             self.log.debug('All reviews have been extracted. Last review offset was: {}'.format(review_offset + num_reviews - 1))
 

@@ -42,11 +42,17 @@ SPLASH_URL = 'http://localhost:8050/'
 
 
 # Configuración de los pipelines
+
+
 ITEM_PIPELINES = {
     'TripAdvisorScraper.pipelines.TripAdvisorPipelineDB' : 300,
-    'TripAdvisorScraper.pipelines.TripAdvisorPipelineJSON': 301
+    'TripAdvisorScraper.pipelines.TripAdvisorPipelineJSON': 301,
+    'TripAdvisorScraper.pipelines.TripAdvisorPipelineBulkJSON' : 302
 }
 
+#ITEM_PIPELINES = {
+#    'TripAdvisorScraper.pipelines.TripAdvisorPipelineBulkJSON' : 302
+#}
 
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)

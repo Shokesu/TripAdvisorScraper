@@ -52,8 +52,6 @@ class TripAdvisorDB:
             'TripAdvisorHotelGeolocation': lambda item:self.insert_item(item, 'hotel_geo')
             }
 
-        self.reset()
-
     def __getattr__(self, item):
         return getattr(self.db, item)
 
@@ -61,7 +59,6 @@ class TripAdvisorDB:
     def execute(self, query, params):
         self.log.debug('Executing SQL:\n{}\nWith this params: {}\n'.format(query, ', '.join(["'{}:{}'".format(type(param).__name__, str(param)) for param in params])))
         self.db.execute(query, params)
-        self.commit()
 
     def executescript(self, sql_script, *args, **kwargs):
         self.log.debug('Executing SQL:\n{}\n'.format(sql_script))
@@ -123,6 +120,12 @@ class TripAdvisorDB:
             """)
         self.commit()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.close()
+        return False
 
     def close(self):
         '''
@@ -152,6 +155,7 @@ class TripAdvisorDB:
             field_values)
         self.commit()
 
+
     def save_item(self, item):
         '''
         Almacena un item en la base de datos.
@@ -162,3 +166,67 @@ class TripAdvisorDB:
             handler = self.item_handlers[item.__class__.__name__]
             handler(item)
 
+
+    def get_everything(self):
+        cursor = self.cursor()
+        def fetch_all(query, attrs, params = None):
+            query = query.format(', '.join(attrs))
+            self.log.debug(query)
+            if not params is None:
+                cursor.execute(query, tuple(params))
+            else:
+                cursor.execute(query)
+
+            data = []
+            for register in cursor.fetchall():
+                data.append(dict(zip(attrs, register)))
+            return data
+
+        def fetch_one(query, attrs, params = None):
+            registers = fetch_all(query, attrs, params)
+            return registers[0]
+
+
+
+        def get_hotel_info(hotel_id):
+            return fetch_one(query = 'SELECT {} FROM hotel_info WHERE id = ?;',
+                             attrs = ['name', 'phone_number', 'amenities', 'address'],
+                             params = [hotel_id])
+
+
+        def get_hotel_reviews(hotel_id):
+            return fetch_all(query = 'SELECT {} FROM hotel_review WHERE hotel_id = ?;',
+                             attrs = ['title', 'rating', 'text', 'date'],
+                             params = [hotel_id])
+
+        def get_hotel_deals(hotel_id):
+            return fetch_all(query = 'SELECT {} FROM hotel_deal WHERE hotel_id = ?;',
+                             attrs = ['provider_name', 'price'],
+                             params = [hotel_id])
+
+        def get_hotel_geo(hotel_id):
+            return fetch_one(query = 'SELECT {} FROM hotel_geo WHERE hotel_id = ?;',
+                             attrs = ['latitude', 'longitude'],
+                             params = [hotel_id])
+
+        def get_hotel_ids():
+            registers = fetch_all(query = 'SELECT {} FROM hotel_info;', attrs = ['id'])
+            hotel_ids = [register['id'] for register in registers]
+            return hotel_ids
+
+        data = []
+        hotel_ids = get_hotel_ids()
+        for hotel_id in hotel_ids:
+            hotel_info = get_hotel_info(hotel_id)
+            hotel_deals = get_hotel_deals(hotel_id)
+            hotel_reviews = get_hotel_reviews(hotel_id)
+            self.log.debug('Num reviews: {}'.format(len(hotel_reviews)))
+
+            hotel_data = {
+                'info' : hotel_info,
+                'reviews' : hotel_reviews,
+                'deals' : hotel_deals
+            }
+            hotel_data['info']['geo'] = get_hotel_geo(hotel_id)
+            data.append(hotel_data)
+        return data
