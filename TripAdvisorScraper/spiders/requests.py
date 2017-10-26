@@ -23,7 +23,7 @@ SOFTWARE.
 
 from scrapy import Request
 from urllib.parse import urlencode
-from .splash_utils import splash_request, Wait, ElementReady, SendText, Click
+from .splash_utils import splash_request, Wait, ElementReady, SendText, Click, ElementsReady
 from os.path import dirname, join
 
 
@@ -117,7 +117,9 @@ class TripAdvisorRequests:
         use_splash = fetch_deals
 
         if use_splash:
-            actions = ElementReady('div.premium_offers_area.viewDealChevrons')
+            actions = ElementsReady([
+                'div.premium_offers_area.viewDealChevrons'
+            ])
             return cls.splash_request(actions = actions, *args, **kwargs)
 
         return cls.request(*args, **kwargs)

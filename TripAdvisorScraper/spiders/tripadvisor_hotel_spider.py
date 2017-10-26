@@ -84,7 +84,7 @@ class TripAdvisorHotelSpider(Spider):
             if len(result) == 0:
                 raise ValueError()
 
-            # result = [result[0]]
+            result = [result[0]]
             for entry in result:
                 path, params = match('^(.*)\?(.*)$', entry).groups()
 
@@ -187,8 +187,12 @@ class TripAdvisorHotelSpider(Spider):
         else:
             hotel_id = response.meta['hotel_id']
 
-        # Procesamos las reviews de la página
+        #review_offset = int(response.css('div.listContainer p.pagination-details').xpath('.//b[1]//text()').extract_first()) - 1
         num_reviews = len(response.css('div.listContainer div.review-container').extract())
+        review_offset = response.meta['review_offset'] if 'review_offset' in response.meta else 0
+
+
+        # Procesamos las reviews de la página
         for i in range(0, num_reviews):
             try:
                 review_selector = response.css('div.listContainer')
@@ -216,19 +220,18 @@ class TripAdvisorHotelSpider(Spider):
             except:
                 pass
 
-        review_offset = int(response.css('div.listContainer p.pagination-details').xpath('.//b[1]//text()').extract_first()) - 1
+
         self.log.debug('Succesfully extracted {} reviews from offset {} to {}'.format(num_reviews, review_offset, review_offset + num_reviews - 1))
 
-
         # Procesamos las reviews de la siguiente página.
-        if len(response.css('div.pagination').xpath('.//span[contains(@class, "next") and not(contains(@class, "disabled"))]')) > 0:
-            review_offset = response.css('div.pagination span.next::attr(data-offset)').extract_first()
-            self.log.debug('Processing next review\'s section page, with offset = {}'.format(review_offset))
+        next_review_offset = int(response.css('div.pagination span.next::attr(data-offset)').extract_first())
+        if (next_review_offset - review_offset) == num_reviews and len(response.css('div.pagination').xpath('.//span[contains(@class, "next") and not(contains(@class, "disabled"))]')) > 0:
+            self.log.debug('Processing next review\'s section page, with offset = {}'.format(next_review_offset))
 
             url_match_result = match(('^(.*\/{})(or\d+\-)?(.*)$'.format('{0}' * 4)).format('[^-]+\-'), response.url)
             url = url_match_result.group(1) + url_match_result.group(3)
             next_page_url = '{}{}{}'.format(url_match_result.group(1),
-                                            'or{}-'.format(review_offset),
+                                            'or{}-'.format(next_review_offset),
                                             url_match_result.group(3))
             self.log.debug('Next reviews page in {}'.format(next_page_url))
             result = match('^https?\:\/\/[^\/]+\/([^\?]+)(\?(.*))?$', next_page_url)
@@ -238,7 +241,7 @@ class TripAdvisorHotelSpider(Spider):
             # Realizamos la request a la siguiente página.
             request = TripAdvisorRequests.get_hotel_page(path = path, params = params, callback = self.parse_hotel_reviews)
             request.meta['hotel_id'] = hotel_id
-
+            request.meta['review_offset'] = next_review_offset
             yield request
         else:
             self.log.debug('All reviews have been extracted. Last review offset was: {}'.format(review_offset + num_reviews - 1))
