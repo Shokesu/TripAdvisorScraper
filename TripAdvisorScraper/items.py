@@ -21,16 +21,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-import scrapy
 from scrapy import Item, Field
 from scrapy.loader.processors import TakeFirst, Join
 
 class TripAdvisorHotelInfo(Item):
-    name = Field(output_processor = TakeFirst())
-    phone_number = Field(output_processor = TakeFirst())
-    amenities = Field()
-    id = Field(output_processor = TakeFirst())
-    address = Field(input_processor = TakeFirst(), output_processor = Join(separator = ', '))
+    name = Field(output_processor = TakeFirst(), mandatory = True)
+    phone_number = Field(output_processor = TakeFirst(), mandatory = False)
+    amenities = Field(output_processor = Join(separator = ', '), mandatory = False)
+    id = Field(output_processor = TakeFirst(), mandatory = True)
+    address = Field(input_processor = TakeFirst(), output_processor = Join(separator = ', '), mandatory = True)
 
 
 class TripAdvisorHotelReview(Item):
@@ -47,6 +46,6 @@ class TripAdvisorHotelDeals(Item):
 
 
 class TripAdvisorHotelGeolocation(Item):
-    hotel_id = Field(output_processor = TakeFirst())
-    longitude = Field(output_processor = TakeFirst())
-    latitude = Field(output_processor = TakeFirst())
+    hotel_id = Field(output_processor = TakeFirst(), mandatory = True)
+    longitude = Field(output_processor = TakeFirst(), mandatory = True)
+    latitude = Field(output_processor = TakeFirst(), mandatory = True)
