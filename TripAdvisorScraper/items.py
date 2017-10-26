@@ -22,7 +22,47 @@ SOFTWARE.
 '''
 
 from scrapy import Item, Field
-from scrapy.loader.processors import TakeFirst, Join
+from scrapy.loader.processors import TakeFirst, Join, MapCompose
+
+
+class TypeConverter:
+    '''
+    Es una clase de utilidad. Es un processor que puede usarse para definir los campos
+    de los items. Sirver para realizar conversiones de tipo de los valores de los campos.
+    Las subclases deben implementar el método convert.
+    '''
+    def convert(self, value):
+        '''
+        Modifica el tipo de un valor de entrada que se pasa como parámetro
+        :param value:
+        :return: Devuelve el valor de entrada con su tipo modificado.
+        '''
+        return value
+
+    def __call__(self, values, loader_context = None):
+        next_values = []
+        for value in values:
+            try:
+                next_values.append(self.convert(value))
+            except:
+                pass
+        return next_values
+
+class ToFloat(TypeConverter):
+    '''
+    Sirve para formatear los campos de los items como valores flotantes
+    '''
+    def convert(self, value):
+        return float(value)
+
+class ToInt(TypeConverter):
+    '''
+    Sirve para formatear los campos de los items como valores enteros.
+    '''
+    def convert(self, value):
+        return int(value)
+
+
 
 class TripAdvisorHotelInfo(Item):
     name = Field(output_processor = TakeFirst(), mandatory = True)
@@ -34,7 +74,7 @@ class TripAdvisorHotelInfo(Item):
 
 class TripAdvisorHotelReview(Item):
     title = Field(output_processor = TakeFirst(), mandatory = True)
-    rating = Field(output_processor = TakeFirst(), mandatory = True)
+    rating = Field(input_processor = ToInt(), output_processor = TakeFirst(), mandatory = True)
     text = Field(output_processor = TakeFirst(), mandatory = True)
     hotel_id = Field(output_processor = TakeFirst(), mandatory = True)
     date = Field(output_processor = TakeFirst(), mandatory = True)
@@ -42,10 +82,10 @@ class TripAdvisorHotelReview(Item):
 class TripAdvisorHotelDeals(Item):
     hotel_id = Field(output_processor = TakeFirst(), mandatory = True)
     provider_name = Field(output_processor = TakeFirst(), mandatory = True)
-    price = Field(output_processor = TakeFirst(), mandatory = True)
+    price = Field(input_processor = ToFloat(), output_processor = TakeFirst(), mandatory = True)
 
 
 class TripAdvisorHotelGeolocation(Item):
     hotel_id = Field(output_processor = TakeFirst(), mandatory = True)
-    longitude = Field(output_processor = TakeFirst(), mandatory = True)
-    latitude = Field(output_processor = TakeFirst(), mandatory = True)
+    longitude = Field(input_processor = ToFloat(), output_processor = TakeFirst(), mandatory = True)
+    latitude = Field(input_processor = ToFloat(), output_processor = TakeFirst(), mandatory = True)

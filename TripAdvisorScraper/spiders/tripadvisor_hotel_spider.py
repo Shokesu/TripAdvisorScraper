@@ -79,11 +79,12 @@ class TripAdvisorHotelSpider(Spider):
             result = response.css('div.info.poi-info div.title::attr(onclick)')
             if len(result) == 0:
                 raise ValueError()
-            result =  result.re('\([ ]*\'[^\']*\'[ ]*,[ ]*\'[^\']*\'[ ]*,[ ]*\'[^\']*\'[ ]*,[ ]*[^\,]*[ ]*,[ ]*\'\/([^\']+)\'')
+            result = result.re('\([ ]*\'[^\']*\'[ ]*,[ ]*\'[^\']*\'[ ]*,[ ]*\'[^\']*\'[ ]*,[ ]*[^\,]*[ ]*,[ ]*\'\/([^\']+)\'')
 
             if len(result) == 0:
                 raise ValueError()
 
+            result = [result[0]]
             for entry in result:
                 path, params = match('^(.*)\?(.*)$', entry).groups()
 
