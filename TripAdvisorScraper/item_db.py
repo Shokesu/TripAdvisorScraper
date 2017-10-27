@@ -171,7 +171,6 @@ class TripAdvisorDB:
         cursor = self.cursor()
         def fetch_all(query, attrs, params = None):
             query = query.format(', '.join(attrs))
-            self.log.debug(query)
             if not params is None:
                 cursor.execute(query, tuple(params))
             else:
