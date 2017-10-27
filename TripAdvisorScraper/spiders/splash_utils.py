@@ -273,7 +273,6 @@ class DOMEventListenerCode(SplashWaitForResumeCode):
 
 
 
-
 class ElementsReady(DOMEventListenerCode):
     '''
     Esta clase genera código para que la ejecución de un script se pausé y se resuma cuando un
@@ -293,24 +292,6 @@ class ElementsReady(DOMEventListenerCode):
                                   args = [NoEscape('[{}]'.format(', '.join(self.get_selectors()))), callback_method_name])
 
 
-class ElementsReadyToClick(DOMEventListenerCode):
-    '''
-    Esta clase puede usarse generar código que parará la ejecución de un script hasta que un conjunto
-    de elementos puedan ser clickeados (tengan el atributo onclick establecido o un manejador sobre
-    el evento 'click')
-    '''
-    def __init__(self, selectors = []):
-        '''
-        Inicializa la instancia
-        :param selectors:
-        '''
-        super().__init__(selectors)
-
-    def get_register_callback_code(self, callback_method_name):
-        return JSFunctionCallCode(name = 'allElementsClickHandled',
-                                  args = [NoEscape('[{}]'.format(', '.join(self.get_selectors()))), callback_method_name])
-
-
 class ElementReady(ElementsReady):
     '''
     Es igual que ElementsReady, pero solo se especifica un selector.
@@ -318,13 +299,6 @@ class ElementReady(ElementsReady):
     def __init__(self, selector):
         super().__init__([selector])
 
-
-class ElementReadyToClick(ElementsReadyToClick):
-    '''
-    Es igual que ElementsReadyToClick, pero solo se especifíca un selector.
-    '''
-    def __init__(self, selector):
-        super().__init__([selector])
 
 
 class InputElementHasValue(DOMEventListenerCode):
