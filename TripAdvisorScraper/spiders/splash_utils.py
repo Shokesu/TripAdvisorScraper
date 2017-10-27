@@ -58,6 +58,30 @@ from os.path import dirname, join
 from scrapy_splash import SplashRequest
 
 
+
+
+
+
+def stringify(values):
+    '''
+    Método de utilidad para convertir valores que serán hardcodeados dentro de trozos de
+    código LUA o JS, a formato String (escapando los caracteres " y ' si los valores son strings)
+    '''
+    def _stringify(value):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return '"{}"'.format(value.replace('"', '\\"').replace("'", "\\'"))
+        return str(value)
+
+    if values is None:
+        return None
+    if not isinstance(values, list):
+        value = values
+        return _stringify(value)
+    return [_stringify(value) for value in values]
+
+
 class Code:
     '''
     Representa un trozo de código.
@@ -81,6 +105,19 @@ class Code:
 
 
 
+class NoEscape(Code):
+    '''
+    Se usar para encapsular cadenas de caracteres que no deben ser escapadas (por ejemplo
+    para indicar nombres de variables en el código JS o LUA)
+    '''
+    def __init__(self, something):
+        self.something = something
+
+    def __str__(self):
+        return str(self.something)
+
+
+
 class JSFunctionCode(Code):
     '''
     Representa el código de la definición de una clase en Javascript.
@@ -92,6 +129,7 @@ class JSFunctionCode(Code):
         :param body: Será el trozo de código dentro del método
         :param params: Un listado con los argumentos del método
         '''
+        return_value = stringify(return_value)
         code = ('function {} ({}) {{\n' \
                '{}\n' \
                '}}').format(name, ', '.join([str(param) for param in params]),
@@ -104,13 +142,14 @@ class JSFunctionCallCode(Code):
     '''
     Es una clase que representa una llamada a un método JS
     '''
-    def __init__(self, name, params = []):
+    def __init__(self, name, args = []):
         '''
         Inicializa la instancia
         :param name: Es el nombre del método invocado
-        :param params: Son los parámetros que deben indicarse.
+        :param args: Son los argumentos que deben indicarse.
         '''
-        code = '{}({});'.format(name, ', '.join([str(param) for param in params]))
+        args = stringify(args)
+        code = '{}({});'.format(name, ', '.join(args))
         super().__init__(code)
 
 
@@ -118,14 +157,15 @@ class JSObjectMethodCallCode(Code):
     '''
     Representa la llamada un método de clase en JS
     '''
-    def __init__(self, object, method, params = []):
+    def __init__(self, object, method, args = []):
         '''
         Inicializa la instancia
         :param object: Es una instancia de una clase
         :param method: Es el nombre método de clase a invocar
-        :param params: Son los parámetros que se indicarán en la llamada
+        :param args: Son los argumentos que se indicarán en la llamada
         '''
-        code = '{}.{}({});'.format(object, method, ', '.join([str(param) for param in params]))
+        args = stringify(args)
+        code = '{}.{}({});'.format(object, method, ', '.join(args))
         super().__init__(code)
 
 
@@ -144,6 +184,7 @@ class JSCodeWrapper:
     def __str__(self):
         return self.wrapper
 
+
 class LuaFunctionCode(Code):
     '''
     Representa la definición de un método en LUA
@@ -155,7 +196,7 @@ class LuaFunctionCode(Code):
         :param body: Es el código del cuerpo del método.
         :param params: Son los argumentos que recibirá el método.
         '''
-
+        return_value = stringify(return_value)
         code = ('function {} ({})\n' \
                '{}\n' \
                'end').format(name, ', '.join([str(param) for param in params]),
@@ -167,16 +208,17 @@ class LuaObjectMethodCallCode(Code):
     '''
     Representa una llamada a un método de clase en LUA
     '''
-    def __init__(self, object, method, params = [], surround_with_assert = True):
+    def __init__(self, object, method, args = [], surround_with_assert = True):
         '''
         Inicializa la instancia
         :param object: Es el nombre del objeto
         :param method: Es el nombre del método de clase
-        :param params: Son los parámetros a indicar como argumentos-
+        :param args: Son los parámetros a indicar como argumentos-
         :param surround_with_assert: Si es True, la llamada se encapsulará en una sentencia
         del tipo assert(...)
         '''
-        code = '{}:{}({})'.format(object, method, ', '.join([str(param) for param in params]))
+        args = stringify(args)
+        code = '{}:{}({})'.format(object, method, ', '.join(args))
         if surround_with_assert:
             code = 'assert({})'.format(code)
 
@@ -194,11 +236,11 @@ class SplashWaitForResumeCode(LuaObjectMethodCallCode):
                                      body = js_code)
         js_snippet = JSCodeWrapper(js_code)
 
-        params = [js_snippet]
+        args = [NoEscape(js_snippet)]
         if not timeout is None:
-            params.append(timeout)
+            args.append(timeout)
 
-        super().__init__(object = 'splash', method = 'wait_for_resume', params = params)
+        super().__init__(object = 'splash', method = 'wait_for_resume', args = args)
 
 
 class DOMEventListenerCode(SplashWaitForResumeCode):
@@ -207,10 +249,12 @@ class DOMEventListenerCode(SplashWaitForResumeCode):
     pausar la ejecución del mismo hasta que un evento en el DOM de la web ocurra.
     '''
     def __init__(self, selectors = [], timeout = None):
-        self.selectors = ['"{}"'.format(selector) for selector in selectors]
+        self.selectors = stringify(selectors)
+
+
         callback_method_name = '__callback'
         registration_method_name = '__register'
-        register_callback_code = self.get_register_callback_code(callback_method_name)
+        register_callback_code = self.get_register_callback_code(NoEscape(callback_method_name))
 
         js_code = JSFunctionCode(name = registration_method_name,
                                  body = register_callback_code) +\
@@ -246,7 +290,7 @@ class ElementsReady(DOMEventListenerCode):
 
     def get_register_callback_code(self, callback_method_name):
         return JSFunctionCallCode(name = 'allElementsAvaliable',
-                                  params = ['[{}]'.format(', '.join(self.get_selectors())), callback_method_name])
+                                  args = [NoEscape('[{}]'.format(', '.join(self.get_selectors()))), callback_method_name])
 
 
 class ElementsReadyToClick(DOMEventListenerCode):
@@ -264,7 +308,7 @@ class ElementsReadyToClick(DOMEventListenerCode):
 
     def get_register_callback_code(self, callback_method_name):
         return JSFunctionCallCode(name = 'allElementsClickHandled',
-                                  params = ['[{}]'.format(', '.join(self.get_selectors())), callback_method_name])
+                                  args = [NoEscape('[{}]'.format(', '.join(self.get_selectors()))), callback_method_name])
 
 
 class ElementReady(ElementsReady):
@@ -273,6 +317,7 @@ class ElementReady(ElementsReady):
     '''
     def __init__(self, selector):
         super().__init__([selector])
+
 
 class ElementReadyToClick(ElementsReadyToClick):
     '''
@@ -302,8 +347,7 @@ class InputElementHasValue(DOMEventListenerCode):
 
     def get_register_callback_code(self, callback_method_name):
         return JSFunctionCallCode(name = 'onInputHasValue',
-                                  params = [self.get_selectors()[0], self.get_value(), callback_method_name])
-
+                                  args = [NoEscape(self.get_selectors()[0]), self.get_value(), callback_method_name])
 
 
 
@@ -318,12 +362,8 @@ class Click(Code):
         Inicializa la instancia
         :param selector: Es el selector del elemento
         '''
-        #code = ElementReady(selector) + ElementReadyToClick(selector) +\
-        #       LuaObjectMethodCallCode(object = LuaObjectMethodCallCode(object = 'splash', method = 'select', params = ['"{}"'.format(selector)]),
-        #                               method = 'mouse_click')
-
         code = ElementReady(selector) +\
-               LuaObjectMethodCallCode(object = LuaObjectMethodCallCode(object = 'splash', method = 'select', params = ['"{}"'.format(selector)]),
+               LuaObjectMethodCallCode(object = LuaObjectMethodCallCode(object = 'splash', method = 'select', args = [selector]),
                                        method = 'mouse_click')
         super().__init__(code)
 
@@ -341,13 +381,13 @@ class SendText(Code):
         :param selector: Es el selector del elemento
         :param text: Es el texto ha escribir en el elemento
         '''
-        text = '"{}"'.format(text)
         code = ElementReady(selector) +\
-               LuaObjectMethodCallCode(object = LuaObjectMethodCallCode(object = 'splash', method = 'select', params = ['"{}"'.format(selector)]),
-                                       method = 'send_text', params = [text]) +\
+               LuaObjectMethodCallCode(object = LuaObjectMethodCallCode(object = 'splash', method = 'select', args = [selector]),
+                                       method = 'send_text', args = [text]) +\
                InputElementHasValue(selector = selector, value = text)
 
         super().__init__(code)
+
 
 class Wait(Code):
     '''
@@ -355,7 +395,7 @@ class Wait(Code):
     de tiempo específico.
     '''
     def __init__(self, amount):
-        code = LuaObjectMethodCallCode(object = 'splash', method = 'wait', params = [amount])
+        code = LuaObjectMethodCallCode(object = 'splash', method = 'wait', args = [amount])
         super().__init__(code)
 
 
@@ -368,24 +408,30 @@ class LuaSplashScript(Code):
     actions = Click('#first-element') + SendText('#second-element', 'some-value')
     script = LuaSplashScript(actions)
     '''
-    def __init__(self, actions = Code('')):
+    def __init__(self, actions = None):
         '''
         Inicializa la instancia.
         :param actions: Son las acciones a realizar por el script.
         '''
 
-        main_method_body = LuaObjectMethodCallCode(object = 'splash', method = 'go', params = ['splash.args.url']) +\
-                           LuaObjectMethodCallCode(object = 'splash', method = 'runjs', params = ['splash.args.jquery']) + \
-                           LuaObjectMethodCallCode(object = 'splash', method = 'runjs', params = ['splash.args.scrap_utils']) +\
+        if actions is None:
+            actions = Code()
+
+        main_method_body = LuaObjectMethodCallCode(object = 'splash', method = 'go', args = [NoEscape('splash.args.url')]) +\
+                           LuaObjectMethodCallCode(object = 'splash', method = 'runjs', args = [NoEscape('splash.args.jquery')]) + \
+                           LuaObjectMethodCallCode(object = 'splash', method = 'runjs', args = [NoEscape('splash.args.scrap_utils')]) +\
                            actions
 
         code = LuaFunctionCode(name = 'main', params = ['splash'],
                                body = main_method_body,
                                return_value = LuaObjectMethodCallCode(object = 'splash', method = 'html', surround_with_assert = False))
+
+        # Formatear las cadenas de caracteres.
+
         super().__init__(code)
 
 
-def splash_request(url, callback, actions = Code()):
+def splash_request(url, callback, actions = None):
     '''
     Realiza una petición a la página cuya url se indica como parámetro y devuelve una instancia
     de la clase Request como valor de retorno.
@@ -408,18 +454,7 @@ def splash_request(url, callback, actions = Code()):
         with open(join(dirname(dirname(__file__)), 'static', 'js', path)) as fh:
             return fh.read()
 
-
-    # Se construye un script en LUA para ejecutarlo sobre el endpoint 'execute' en splash
-    main_method_body = LuaObjectMethodCallCode(object='splash', method='go', params=['splash.args.url']) + \
-                       LuaObjectMethodCallCode(object='splash', method='runjs', params=['splash.args.jquery']) + \
-                       LuaObjectMethodCallCode(object='splash', method='runjs', params=['splash.args.scrap_utils']) + \
-                       actions
-
-    code = LuaFunctionCode(name='main', params=['splash'],
-                           body=main_method_body,
-                           return_value=LuaObjectMethodCallCode(object='splash', method='html', surround_with_assert=False))
-
-
+    code = LuaSplashScript(actions)
 
     return SplashRequest(callback=callback,
                          endpoint='execute',
