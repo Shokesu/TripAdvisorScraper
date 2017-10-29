@@ -35,6 +35,9 @@ from os.path import dirname, join
 from datetime import datetime
 from .requests import *
 import json
+import webbrowser
+
+
 
 class TripAdvisorHotelSpider(Spider):
     # Nombre de nuestra araña
@@ -56,6 +59,19 @@ class TripAdvisorHotelSpider(Spider):
         self.log = logging.getLogger(__name__)
         self.log.addHandler(log_file_handler)
 
+    def log_html_page(self, response):
+        '''
+        Permite depurar el código de esta clase, imprimiendo el DOM de la página obtenida como
+        respuesta a una request anterior, en un fichero externo. El método también abre dicho
+        fichero (HTML) en el navegador por defecto del sistema.
+        :param response:
+        :return:
+        '''
+        html_page_path = join(dirname(dirname(__file__)), 'log', 'scraped_web.html')
+        with open(html_page_path, 'wb') as fh:
+            fh.write(response.body)
+        webbrowser.open(html_page_path)
+
 
 
     def start_requests(self):
@@ -65,10 +81,11 @@ class TripAdvisorHotelSpider(Spider):
         :return: Devuelve un generador, que genera instancias de la
         clase scrapy.Request
         '''
-        yield TripAdvisorRequests.search_hotels_by_terms(terms = self.query, callback = self.parse_hotel_search)
+        #yield TripAdvisorRequests.search_hotels_by_terms(terms = self.query, callback = self.parse_hotel_search_by_terms)
+        yield TripAdvisorRequests.search_hotels_by_place(place = self.query, callback = self.parse_hotel_search_by_place)
 
 
-    def parse_hotel_search(self, response):
+    def parse_hotel_search_by_terms(self, response):
         '''
         Parsea el resultado de una búsqueda en TripAdvisor. Por cada resultado (hotel encontrado)
         genera una nueva request.
@@ -84,7 +101,6 @@ class TripAdvisorHotelSpider(Spider):
             if len(result) == 0:
                 raise ValueError()
 
-            result = [result[0]]
             for entry in result:
                 path, params = match('^(.*)\?(.*)$', entry).groups()
 
@@ -99,12 +115,53 @@ class TripAdvisorHotelSpider(Spider):
             raise ValueError('No hotel found with the search terms: {}'.format(self.query))
 
         # Parseamos la siguiente página de resultados
+        # TODO
+
+
+
+    def parse_hotel_search_by_place(self, response):
+        '''
+        Este método parsea páginas que son el resultado de búsquedas de hoteles en
+        TripAdvisor por localización.
+        :param response:
+        :return:
+        '''
+        current_page = response.meta['page'] if 'page' in response.meta else 1
+        next_page = current_page + 1
+        num_pages = response.meta['num_pages'] if 'num_pages' in response.meta else response.css('div.pagination .pageNum.last::attr(data-page-number)')
+
+
+        # Obtenemos hoteles marcados como "sponsored"
+        selector = response.xpath('//div[@id="taplc_hsx_hotel_list_dusty_hotels_sponsored_0" or @id="taplc_hsx_hotel_list_lite_dusty_hotels_sponsored_0"]')
+        sponsored_hotels = selector.css('div.meta_listing div.listing_title a::attr(href)').re('^\/(.*)$')
+
+        # Obtenemos hoteles normales, sin marcar con "sponsored"
+        selector = response.xpath('//div[@id="taplc_hsx_hotel_list_dusty_hotels_0" or @id="taplc_hsx_hotel_list_lite_dusty_hotels_0"]')
+        unsponsored_hotels = selector.css('div.meta_listing div.listing_title a::attr(href)').re('^\/(.*)$')
+
+        # Parseamos todos los hotels
+        hotels = sponsored_hotels + unsponsored_hotels
+
+        self.log.debug('Search was succesful. Extracted {} hotels, {} of them are sponsored, in page {}'.format(
+            len(hotels), len(sponsored_hotels), current_page
+        ))
+
+        for hotel in hotels:
+            yield TripAdvisorRequests.get_hotel_page(path = hotel, callback = self.parse_hotel, fetch_deals = True)
+
+        # Procesar la siguiente página de búsqueda.
+        if len(response.css('div.pagination a.next').extract()) > 0:
+            request = TripAdvisorRequests.request_hotels_from_search_results(url = response.url, callback = self.parse_hotel_search_by_place, page_number = next_page)
+            request.meta['page'] = next_page
+            request.meta['num_pages'] = num_pages
+            yield request
+
 
 
     def parse_hotel(self, response):
         '''
         Parsea una request a la página con información de un hotel en TripAdvisor, obtiene sus
-        datos y sus reviews.
+        datos, reviews y deals
         :param response:
         :return:
         '''

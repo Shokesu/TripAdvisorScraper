@@ -56,35 +56,38 @@ class TripAdvisorRequests:
         a la url directamente precedido por el símbolo ? (debe estar url-ificado)
         :return: Devuelve una url
         '''
-        url = '{}/{}'.format(cls.get_root_url(), path)
+
+        url = '{}/{}'.format(cls.get_root_url(), path) if not path is None else cls.get_root_url()
         if not params is None:
             url += '?{}'.format(urlencode(params) if isinstance(params, dict) else params)
         return url
 
 
     @classmethod
-    def request(cls, path, callback, params = None):
+    def request(cls, callback, path = None, url = None, params = None, **kwargs):
         '''
         Instancia una request para obtener el recurso sobre la ruta indicada, dado los parámetros
         especificados.
-        :param path:
+        :param path: Sirve para construir la ruta https://tripadvisor.com/{path} (se usa si url no se especifica)
+        :param url: Es la url de la request.
         :param callback Será el callback de la request
         :param params: Son los parámetros a añadir a la url de la request
         :return:
         e.g:
         TripAdvisorRequests.request('Search', callback = ..., params = {'q' : 'Blanca Navarra'})
         '''
-        return Request(url = cls.get_resource_url(path, params), callback = callback)
+        return Request(url = cls.get_resource_url(path, params) if url is None else url, callback = callback, **kwargs)
+
 
 
     @classmethod
-    def splash_request(cls, path, actions, callback, params = None):
+    def splash_request(cls, callback, path = None, url = None, actions = None, params = None, **kwargs):
         '''
         Devuelve una request a la url indicada, pero ejecutando antes las acciones que se indican
         como parámetro.
         '''
-        return splash_request(url = cls.get_resource_url(path, params), callback = callback,
-                              actions = actions)
+        return splash_request(url = cls.get_resource_url(path, params) if url is None else url, callback = callback,
+                              actions = actions, **kwargs)
 
 
 
@@ -103,10 +106,55 @@ class TripAdvisorRequests:
 
 
     @classmethod
+    def search_hotels_by_place(cls, place, callback):
+        '''
+        Instancia una request sobre la página principal de TripAdvisor para buscar hoteles
+        indicando un lugar (país, provincia, ciudad, ...)
+        :param callback:
+        :param terms: Son los términos de búsqueda para encontrar hoteles
+        :param place: Puede indicarse para afinar la búsqueda o restringirla a una ciudad, país,
+        provincia, distrito, ...
+        :return:
+        '''
+
+        actions = \
+            SendText('input.typeahead_input', place) +\
+            Click('#SUBMIT_HOTELS') +\
+            Wait(5)
+        # CHANGE LAST WAIT {TODO}
+
+        return cls.splash_request(actions = actions, callback = callback)
+
+
+
+    @classmethod
+    def request_hotels_from_search_results(cls, callback, path = None, url = None, page_number = None):
+        '''
+        Instancia una request sobre una página de resultados de una búsqueda de hoteles en
+        TripAdvisor. e.g:
+        https://www.tripadvisor.com/Hotels-g187520-Pamplona_Navarra-Hotels.html
+        :param path:
+        :param url:
+        :param callback:
+        :param page_number: Si se especifica, se clickeará de forma automática sobre el panel
+        de paginación, el botón con el número indicado para actualizar el DOM y que aparezcan
+        los hoteles de dicha página
+        :return:
+        '''
+        if page_number is None or page_number == 1:
+            actions = ElementReady('div.pagination .pageNum.last')
+        else:
+            actions = Click('div.pagination .pageNum[data-page-number="{}"]'.format(page_number))
+            actions += ElementReady('div.pagination .pageNum.current[data-page-number="{}"]'.format(page_number))
+
+        return cls.splash_request(url = url, path = path, callback = callback, actions = actions, dont_filter = True)
+
+
+
+    @classmethod
     def get_hotel_page(cls, fetch_deals = False, *args, **kwargs):
         '''
         Instancia una request a la página con la información de un hotel y sus reviews
-        de una página de un hotel en trip advisor
         e.g:
         https://www.tripadvisor.com/Hotel_Review-g187520-d233664-Reviews-Hotel_Blanca_de_Navarra-Pamplona_Navarra.html
         :param fetch_deals Es un parámetro que si se establece a True, devuelve en el DOM de la
