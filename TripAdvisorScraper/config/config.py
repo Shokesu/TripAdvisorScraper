@@ -30,13 +30,17 @@ class Config:
     '''
     Esta clase representa una configuración para el scraper.
     '''
-    def __init__(self, vars = {}):
+    def __init__(self, vars = {}, root_path = None):
         '''
         Inicializa la instancia.
         :param vars: Es un diccionario donde los claves son los nombres de las variables,
         y los valores, los valores de cada una de ellas.
+        :param root_path: Es un parámetro opcional que indica ruta raíz para procesar las
+        rutas relativas especificadas en las variables de configuración. Por defecto es
+        el directorio padre de este script
         '''
         self.vars = copy(vars)
+        self.root_path = root_path if not root_path is None else dirname(__file__)
 
     def get_value(self, var, default = None):
         '''
@@ -85,12 +89,18 @@ class Config:
         '''
         return self.has_value(var, True)
 
+    def get_root_path(self):
+        '''
+        :return: Devuelva la ruta raíz para procesar las rutas relativas especificadas en
+        las variables de configuración
+        '''
+        return self.root_path
 
     def get_path(self, var, default = None):
         '''
         Devuelve la variable indicada como parámetro (ruta a un fichero) normalizada (se procesan
         rutas relativas)
-        La ruta será relativa al directorio padre de este script
+        La ruta será relativa al directorio padre de get_path()
         Si la variable no es de tipo string o no esta establecida, devuelve el parámetro "default"
         indicado, que por defecto es None
         :param var:
@@ -101,7 +111,7 @@ class Config:
         if value is None or not isinstance(value, str):
             return default
 
-        return normpath(join(dirname(__file__), value))
+        return normpath(join(self.get_root_path(), value))
 
 
     @staticmethod
@@ -119,7 +129,7 @@ class Config:
             spec = importlib.util.spec_from_file_location('config.{}'.format(config_module_name), location)
             config_module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(config_module)
-            return Config(dict([(key, value) for key, value in config_module.__dict__.items() if not match('^__.*__$', key)]))
+            return Config(dict([(key, value) for key, value in config_module.__dict__.items() if not match('^__.*__$', key)]), root_path = dirname(location))
         except:
             raise Exception('Failed to load configuration from file')
 
