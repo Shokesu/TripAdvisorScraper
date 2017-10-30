@@ -167,8 +167,16 @@ class TripAdvisorHotelSpider(Spider, Logger):
         :param response:
         :return:
         '''
-        return chain(self.parse_hotel_info(response), self.parse_hotel_deals(response),
-                     self.parse_hotel_reviews(response))
+        config = GlobalConfig()
+
+        methods = []
+        methods.append(self.parse_hotel_info(response))
+        if config.is_true('SCRAP_DEALS'):
+            methods.append(self.parse_hotel_deals(response))
+        if config.is_true('SCRAP_REVIEWS'):
+            methods.append(self.parse_hotel_reviews(response))
+
+        return chain(*methods)
 
 
     def parse_hotel_info(self, response):
@@ -198,7 +206,9 @@ class TripAdvisorHotelSpider(Spider, Logger):
 
         geo_request = GMapRequests.search_place(address = item.get('address'), callback = self.parse_hotel_geolocation)
         geo_request.meta['hotel_id'] = item.get('id')
-        yield geo_request
+
+        if GlobalConfig().is_true('SCRAP_GEO'):
+            yield geo_request
 
 
     def parse_hotel_deals(self, response):
