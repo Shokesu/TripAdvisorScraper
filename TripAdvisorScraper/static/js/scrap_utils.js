@@ -4,12 +4,6 @@ Si esta activado el sandboxing y la página web a scrapear está embebida en un 
 redefinimos $...
 */
 
-if($('iframe.sandbox').length > 0) {
-    var __jquery = $.noConflict();
-    var sandbox = __jquery('iframe.sandbox').first();
-    $ = function(selector) { return sandbox.contents().find(selector); }
-}
-
 callback_wrapper = function(callback) {
     this.callback = callback;
 }

@@ -134,7 +134,7 @@ class TripAdvisorRequests:
             Wait(5)
         #CHANGE LAST WAIT {TODO}
 
-        return cls.splash_request(actions = actions, callback = callback, enable_iframe_sandbox = True)
+        return cls.splash_request(actions = actions, callback = callback)
 
 
 

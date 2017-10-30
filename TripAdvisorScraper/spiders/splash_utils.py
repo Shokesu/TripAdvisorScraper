@@ -606,7 +606,7 @@ class LuaSplashScript(Code):
         super().__init__(code)
 
 
-def splash_request(url, callback, actions = None, enable_iframe_sandbox = False, **kwargs):
+def splash_request(url, callback, actions = None, **kwargs):
     '''
     Realiza una petición a la página cuya url se indica como parámetro y devuelve una instancia
     de la clase Request como valor de retorno.
