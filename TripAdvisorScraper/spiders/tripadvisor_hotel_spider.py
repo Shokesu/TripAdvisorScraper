@@ -142,28 +142,18 @@ class TripAdvisorHotelSpider(Spider, Logger):
         next_page = current_page + 1
         num_pages = response.meta['num_pages'] if 'num_pages' in response.meta else response.css('div.pagination .pageNum.last::attr(data-page-number)')
 
+        # Obtenemos todos los hoteles
+        hotels = response.css('div.meta_listing div.listing_title a::attr(href)').re('^\/(.*)$')
 
-        # Obtenemos hoteles marcados como "sponsored"
-        selector = response.xpath('//div[@id="taplc_hsx_hotel_list_dusty_hotels_sponsored_0" or @id="taplc_hsx_hotel_list_lite_dusty_hotels_sponsored_0"]')
-        sponsored_hotels = selector.css('div.meta_listing div.listing_title a::attr(href)').re('^\/(.*)$')
+        self.log.debug('Search was succesful. Extracted {} hotels in page {}'.format(len(hotels), current_page))
 
-        # Obtenemos hoteles normales, sin marcar con "sponsored"
-        selector = response.xpath('//div[@id="taplc_hsx_hotel_list_dusty_hotels_0" or @id="taplc_hsx_hotel_list_lite_dusty_hotels_0"]')
-        unsponsored_hotels = selector.css('div.meta_listing div.listing_title a::attr(href)').re('^\/(.*)$')
-
-        # Parseamos todos los hotels
-        hotels = sponsored_hotels + unsponsored_hotels
-
-        self.log.debug('Search was succesful. Extracted {} hotels, {} of them are sponsored, in page {}'.format(
-            len(hotels), len(sponsored_hotels), current_page
-        ))
 
         for hotel in hotels:
             yield TripAdvisorRequests.get_hotel_page(path = hotel, callback = self.parse_hotel, fetch_deals = True)
 
         # Procesar la siguiente página de búsqueda.
         if len(response.css('div.pagination a.next').extract()) > 0:
-            request = TripAdvisorRequests.request_hotels_from_search_results(url = response.url, callback = self.parse_hotel_search_by_place, page_number = next_page)
+            request = TripAdvisorRequests.request_hotels_from_search_results_by_place(url = response.url, callback = self.parse_hotel_search_by_place, page_number = next_page)
             request.meta['page'] = next_page
             request.meta['num_pages'] = num_pages
             yield request
