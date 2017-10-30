@@ -112,14 +112,16 @@ class Config:
         padre de este script.
         :return: Devuelve una instancia de la clase Config.
         '''
-        location = normpath(join(dirname(__file__), file))
-        config_module_name = match('^([^\.]+)(\..*)?$', basename(location)).group(1)
+        try:
+            location = normpath(join(dirname(__file__), file))
+            config_module_name = match('^([^\.]+)(\..*)?$', basename(location)).group(1)
 
-        spec = importlib.util.spec_from_file_location('config.{}'.format(config_module_name), location)
-        config_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(config_module)
-        return Config(dict([(key, value) for key, value in config_module.__dict__.items() if not match('^__.*__$', key)]))
-
+            spec = importlib.util.spec_from_file_location('config.{}'.format(config_module_name), location)
+            config_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(config_module)
+            return Config(dict([(key, value) for key, value in config_module.__dict__.items() if not match('^__.*__$', key)]))
+        except:
+            raise Exception('Failed to load configuration from file')
 
 
 
