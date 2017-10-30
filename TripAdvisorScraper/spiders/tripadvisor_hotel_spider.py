@@ -30,16 +30,16 @@ from itertools import chain
 from hashlib import sha256
 from re import match
 from TripAdvisorScraper.items import TripAdvisorHotelInfo, TripAdvisorHotelReview, TripAdvisorHotelDeals, TripAdvisorHotelGeolocation
-import logging
 from os.path import dirname, join
 from datetime import datetime
 from .requests import *
 import json
 import webbrowser
+from TripAdvisorScraper.logger import Logger
+from TripAdvisorScraper.config.config import GlobalConfig
 
 
-
-class TripAdvisorHotelSpider(Spider):
+class TripAdvisorHotelSpider(Spider, Logger):
     # Nombre de nuestra araña
     name = 'TripAdvisorHotelSpider'
 
@@ -57,15 +57,11 @@ class TripAdvisorHotelSpider(Spider):
         Si terms es None, se escrapearán los hoteles que se encuentren realizando una búsqueda
         por localización.
         '''
-        super().__init__()
+        Spider.__init__(self)
+        Logger.__init__(self, GlobalConfig().get_path('OUTPUT_SCRAP_LOG'))
 
         self.terms = terms
         self.locations = locations
-
-        log_file_path = join(dirname(dirname(__file__)), 'log', 'tripadvisor_hotels.log')
-        log_file_handler = logging.FileHandler(log_file_path)
-        self.log = logging.getLogger(__name__)
-        self.log.addHandler(log_file_handler)
 
 
     def log_html_page(self, response):

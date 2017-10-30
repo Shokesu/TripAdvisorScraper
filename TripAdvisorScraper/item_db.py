@@ -22,10 +22,10 @@ SOFTWARE.
 
 import sqlite3
 from os.path import dirname, join
-import logging
+from TripAdvisorScraper.logger import Logger
+from TripAdvisorScraper.config.config import GlobalConfig
 
-
-class TripAdvisorDB:
+class TripAdvisorDB(Logger):
     '''
     Esta clase se encarga de gestionar la base de datos sqlite3 en la que se almacenan
     los items scrapeados de Trip Advisor.
@@ -36,11 +36,7 @@ class TripAdvisorDB:
         datos.
         '''
 
-        log_file_path = join(dirname(__file__), 'log', 'tripadvisor_db.log')
-        log_file_handler = logging.FileHandler(log_file_path)
-        self.log = logging.getLogger(__name__)
-        self.log.addHandler(log_file_handler)
-
+        Logger.__init__(self, GlobalConfig().get_path('OUTPUT_SQLITE_LOG'))
 
         self.log.debug('Connecting to TripAdvisor sqlite database...')
         self.db = sqlite3.connect(join(dirname(__file__), 'data', 'tripadvisor.db'))
