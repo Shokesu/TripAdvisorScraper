@@ -631,14 +631,6 @@ def splash_request(url, callback, actions = None, **kwargs):
 
     code = LuaSplashScript(actions)
 
-    log_file_path = join(dirname(dirname(__file__)), 'log', 'splash.log')
-    log_file_handler = logging.FileHandler(log_file_path)
-    log = logging.getLogger(__name__)
-    log.addHandler(log_file_handler)
-    log.debug(code)
-
-
-
     return SplashRequest(callback=callback,
                          endpoint='execute',
                          args={
