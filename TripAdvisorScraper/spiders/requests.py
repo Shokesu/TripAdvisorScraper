@@ -50,7 +50,8 @@ class TripAdvisorRequests:
         Construye una url para acceder al recurso del cual se especifica su ruta y parámetros
 
         :param path: Es la ruta del recurso
-        :param callback:
+        :param callback: Es un callback que será invocado cuando se haya procesado la respuesta
+        a la request
         :param params: Son los parámetros del recurso (Opcionales) Puede ser un diccionario
         donde cada entrada especifica un argumento en la url, o un string, en cuyo caso será añadido
         a la url directamente precedido por el símbolo ? (debe estar url-ificado)
@@ -68,7 +69,9 @@ class TripAdvisorRequests:
         '''
         Instancia una request para obtener el recurso sobre la ruta indicada, dado los parámetros
         especificados.
-        :param path: Sirve para construir la ruta https://tripadvisor.com/{path} (se usa si url no se especifica)
+        La url de la request se construye usando el parámetro "url" si se especifica.
+        En caso contrario, se usa el parámetor "path" y la url será: https://www.tripadvisor.com/{path}?{params}
+        :param path: Sirve para construir la ruta
         :param url: Es la url de la request.
         :param callback Será el callback de la request
         :param params: Son los parámetros a añadir a la url de la request
@@ -83,8 +86,17 @@ class TripAdvisorRequests:
     @classmethod
     def splash_request(cls, callback, path = None, url = None, actions = None, params = None, **kwargs):
         '''
-        Devuelve una request a la url indicada, pero ejecutando antes las acciones que se indican
+        Es igual que TripAdvisorRequests.request(...), pero ejecutando antes las acciones que se indican
         como parámetro.
+        e.g:
+        action = ElementReady('#first-element') + Click('#second-element') + Wait(1)
+        TripAdvisorRequests.request(url = ..., callback = ..., actions = actions)
+
+        Se hace una petición al recurso cuya url es la indicada. Cuando se obtiene la respuesta,
+        se procesan las acciones especificadas: Se espera a que un elemento con el selector
+        "#first-element'" aparezca en el DOM de la página, luego se clickea en "#second-element"
+        y finalmente se espera 1 segundo.
+        Depués se invoca el callback pasando como parámetro la respuesta de la request procesada.
         '''
         return splash_request(url = cls.get_resource_url(path, params) if url is None else url, callback = callback,
                               actions = actions, **kwargs)
@@ -94,7 +106,7 @@ class TripAdvisorRequests:
     @classmethod
     def search_hotels_by_terms(cls, terms, callback):
         '''
-        Instancia una request sobre una página de búsqueda de hoteles.
+        Instancia una request sobre una página de búsqueda de hoteles. (Busca hoteles por términos)
         :param terms: Es un texto que indica los términos de búsqueda
         :param callback:
         :return:
@@ -116,7 +128,6 @@ class TripAdvisorRequests:
         provincia, distrito, ...
         :return:
         '''
-
         actions = \
             SendText('input.typeahead_input', place) +\
             Click('#SUBMIT_HOTELS') +\
