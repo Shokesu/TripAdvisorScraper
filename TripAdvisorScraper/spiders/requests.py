@@ -139,7 +139,7 @@ class TripAdvisorRequests:
 
 
     @classmethod
-    def request_hotels_from_search_results(cls, callback, path = None, url = None, page_number = None):
+    def request_hotels_from_search_results_by_place(cls, callback, path = None, url = None, page_number = None):
         '''
         Instancia una request sobre una página de resultados de una búsqueda de hoteles en
         TripAdvisor. e.g:
