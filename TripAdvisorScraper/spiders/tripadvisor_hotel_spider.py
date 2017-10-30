@@ -44,20 +44,29 @@ class TripAdvisorHotelSpider(Spider):
     name = 'TripAdvisorHotelSpider'
 
 
-
-    def __init__(self, q):
+    def __init__(self, terms = None, locations = None):
         '''
         Inicializa esta instancia.
-        :param: q Es la query para buscar el hotel a scrapear (sin codificiar)
+        :param terms: Es un parámetro opcional que indica los términos de busqueda para
+        encontrar hoteles en tripadvisor.
+        :param locations: Es un parámetro opcional que indica una localización para encontrar
+        hoteles en tripadvisor e.g: "Olite, Navarra" o "Spain"
+
+        Si terms no es None, se escrapearán los hoteles que se encuentren realizando una búsqueda
+        por términos.
+        Si terms es None, se escrapearán los hoteles que se encuentren realizando una búsqueda
+        por localización.
         '''
         super().__init__()
 
-        self.query = q
+        self.terms = terms
+        self.locations = locations
 
         log_file_path = join(dirname(dirname(__file__)), 'log', 'tripadvisor_hotels.log')
         log_file_handler = logging.FileHandler(log_file_path)
         self.log = logging.getLogger(__name__)
         self.log.addHandler(log_file_handler)
+
 
     def log_html_page(self, response):
         '''
@@ -81,8 +90,15 @@ class TripAdvisorHotelSpider(Spider):
         :return: Devuelve un generador, que genera instancias de la
         clase scrapy.Request
         '''
-        #yield TripAdvisorRequests.search_hotels_by_terms(terms = self.query, callback = self.parse_hotel_search_by_terms)
-        yield TripAdvisorRequests.search_hotels_by_place(place = self.query, callback = self.parse_hotel_search_by_place)
+        if not self.terms is None:
+            yield TripAdvisorRequests.search_hotels_by_terms(
+                terms=self.terms,
+                callback=self.parse_hotel_search_by_terms)
+        else:
+            yield TripAdvisorRequests.search_hotels_by_place(
+                place=self.locations,
+                callback=self.parse_hotel_search_by_place)
+
 
 
     def parse_hotel_search_by_terms(self, response):

@@ -26,6 +26,7 @@ y procesa los argumentos por línea de comandos.
 '''
 
 from scrapy.crawler import Crawler, CrawlerProcess
+from scrapy.utils.project import get_project_settings
 from TripAdvisorScraper.spiders.tripadvisor_hotel_spider import TripAdvisorHotelSpider
 from TripAdvisorScraper.config.config import GlobalConfig, Config
 import argparse
@@ -91,10 +92,9 @@ def crawl(*args):
 
 
     # Ejecutamos el scraper
-    crawler = Crawler(TripAdvisorHotelSpider)
-    process = CrawlerProcess()
-    process.crawl(crawler, locations = locations, terms = terms)
-
+    process = CrawlerProcess(get_project_settings())
+    process.crawl(TripAdvisorHotelSpider, terms = terms, locations = locations)
+    process.start()
 
 
 if __name__ == '__main__':
