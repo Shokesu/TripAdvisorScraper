@@ -45,19 +45,6 @@ SCRAP_GEO = True
 SCRAP_DEALS = True
 
 
-# Indica el número máximo de reviews a scrapear por hotel (Si no se especifica, se intentan
-# scrapear todas)
-# MAX_REVIEWS_PER_HOTEL = 20
-
-# Indica el número máximo de deals a scrapear por hotel (Si no se especifica, se intentan
-# scrapear todas)
-# MAX_DEALS_PER_HOTEL = 10
-
-# Indica el número máximo de hoteles a escrapear (Si no se especifíca, se intentan
-# scrapear todos)
-# MAX_HOTELS = 30
-
-
 
 
 # CONFIGURACIÓN DE SALIDA DE DATOS
