@@ -1,4 +1,14 @@
 
+/**
+Si esta activado el sandboxing y la página web a scrapear está embebida en un iframe,
+redefinimos $...
+*/
+
+if($('iframe.sandbox').length > 0) {
+    var __jquery = $.noConflict();
+    var sandbox = __jquery('iframe.sandbox').first();
+    $ = function(selector) { return sandbox.contents().find(selector); }
+}
 
 callback_wrapper = function(callback) {
     this.callback = callback;
@@ -86,4 +96,3 @@ onInputHasValue = function(selector, value, callback) {
     var wrapper = new callback_wrapper(callback);
     wrapper.executeWhenInputHasValue(selector, value);
 }
-

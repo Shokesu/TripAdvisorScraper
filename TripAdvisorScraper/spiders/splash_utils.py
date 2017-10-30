@@ -56,11 +56,12 @@ yield splash_request(url = ..., callback = ..., actions = actions)
 
 from os.path import dirname, join
 from scrapy_splash import SplashRequest
+from urllib.parse import urlencode
+import logging
 
 
 
-
-
+# ----- FUNCIONES DE UTILIDAD ------
 
 def stringify(values):
     '''
@@ -81,6 +82,10 @@ def stringify(values):
         value = values
         return _stringify(value)
     return [_stringify(value) for value in values]
+
+
+
+# ----- UTILIDADES PARA LA GENERACIÓN DE CÓDIGO EN JAVASCRIPT ------
 
 
 class Code:
@@ -105,11 +110,14 @@ class Code:
         return Code('{}\n{}'.format(self.get_body(), other.get_body()))
 
 
-
 class NoEscape(Code):
     '''
     Se usar para encapsular cadenas de caracteres que no deben ser escapadas (por ejemplo
     para indicar nombres de variables en el código JS o LUA)
+    e.g:
+    >text = ' Message: "Hello World" '
+    >stringify(text) => '\" Message: \"Hello World\" \"'
+    >stringify(NoEscape(text)) == text => ' Message: "Hello World" '
     '''
     def __init__(self, something):
         self.something = something
@@ -119,11 +127,19 @@ class NoEscape(Code):
 
 
 
+
 class JSFunctionCode(Code):
     '''
     Representa el código de la definición de una clase en Javascript.
+    e.g:
+    >f = JSFunctionCode(name = 'foo', params = ['a', 'b', 'c'], body = 'doSomething();', return_value = 'Nothing')
+    >str(f) =
+    "function foo(a, b, c) {
+        doSomething();
+        return 'Nothing'
+    }"
     '''
-    def __init__(self, name, body = '', params = [], return_value = None):
+    def __init__(self, name = None, body = '', params = [], return_value = None):
         '''
         Inicializa la instancia
         :param name: Será el nombre del método
@@ -133,8 +149,8 @@ class JSFunctionCode(Code):
         return_value = stringify(return_value)
         code = ('function {} ({}) {{\n' \
                '{}\n' \
-               '}}').format(name, ', '.join([str(param) for param in params]),
-                            body if return_value is None else '{}\nreturn {};'.format(body, return_value))
+               '}}').format(name if not name is None else '', ', '.join([str(param) for param in params]),
+                            body if return_value is None else '{}\nreturn {}'.format(body, return_value))
         super().__init__(code)
 
 
@@ -142,12 +158,18 @@ class JSFunctionCode(Code):
 class JSFunctionCallCode(Code):
     '''
     Es una clase que representa una llamada a un método JS
+    e.g:
+    >call = JSFunctionCallCode(name = 'foo', args = [1, 2, 3, 'Hello World'])
+    >str(call)
+    "foo(1, 2, 3, \"Hello World\")"
     '''
     def __init__(self, name, args = [], add_semicolon = True):
         '''
         Inicializa la instancia
         :param name: Es el nombre del método invocado
         :param args: Son los argumentos que deben indicarse.
+        :param add_semicolon: Indica si debe añadirse el símbolo ";" al final de la llamada
+        al método. Por defecto es True
         '''
         args = stringify(args)
         code = '{}({})'.format(name, ', '.join(args))
@@ -156,9 +178,15 @@ class JSFunctionCallCode(Code):
         super().__init__(code)
 
 
+
 class JSObjectMethodCallCode(Code):
     '''
-    Representa la llamada un método de clase en JS
+    Representa la llamada a un método de clase en JS
+    e.g:
+    >call = JSObectMethodCallCode(object = 'robot', method = 'live', args = [1, 2, 3])
+    >str(call)
+        "robot.live(1, 2, 3)"
+
     '''
     def __init__(self, object, method, args = [], add_semicolon = True):
         '''
@@ -166,6 +194,8 @@ class JSObjectMethodCallCode(Code):
         :param object: Es una instancia de una clase
         :param method: Es el nombre método de clase a invocar
         :param args: Son los argumentos que se indicarán en la llamada
+        :param add_semicolon: Indica si debe añadirse el símbolo ";" al final de la llamada
+        al método. Por defecto es True
         '''
         args = stringify(args)
         code = '{}.{}({})'.format(object, method, ', '.join(args))
@@ -174,30 +204,22 @@ class JSObjectMethodCallCode(Code):
         super().__init__(code)
 
 
-class JQueryObject(Code):
-    '''
-    Representa un objeto jquery: $(...)
-    '''
-    def __init__(self, selector):
-        '''
-        Inicializa la instancia.
-        :param selector: Es el selector que es usado para referenciar al objeto jquery
-        '''
-        super().__init__('$({})'.format(stringify(selector)))
 
-
-class JQueryAppendCode(JSObjectMethodCallCode):
+class JSAppendHTMLToElementCode(JSObjectMethodCallCode):
     '''
-    Representa una llamada al método .append de un objeto jquery:
-    $('...').append('....')
+    Genera un trozo de código JS para añadir HTML al contenido de un elemento en el DOM
+    e.g:
+    > str(JSAppendHTMLToElementCode(selector = 'body', arg = '<span>Hello World!</span>'))
+    "$(\"body\").append(\"<span>Hello World!</span>\")"
+
     '''
     def __init__(self, selector, arg):
         '''
         Inicializa la instancia
         :param selector: Es un selector jQuery
-        :param text: Es el argumento a pasar a la llamada de jQuery.append
+        :param arg: Es el argumento a pasar a la llamada de jQuery.append
         '''
-        super().__init__(object = JQueryObject(selector),
+        super().__init__(object = 'jQuery({})'.format(stringify(selector)),
                          method = 'append',
                          args = [arg])
 
@@ -206,6 +228,11 @@ class JSCodeWrapper:
     '''
     Esta clase permite encapsular código javascript para poder escribirlo en un script
     lua como una cadena de caracteres.
+    e.g:
+    >str(JSCodeWrapper(JSFunctionCode(name = 'foo', body = 'doSomething();')))
+    "[[function foo() {
+        doSomething();
+    }]]"
     '''
     def __init__(self, code):
         '''
@@ -218,28 +245,44 @@ class JSCodeWrapper:
         return self.wrapper
 
 
+
+# ----- UTILIDADES PARA LA GENERACIÓN DE CÓDIGO EN LUA ------
+
+
 class LuaFunctionCode(Code):
     '''
     Representa la definición de un método en LUA
+    e.g:
+    >str(LuaFunctionCode(name = 'foo', body = 'doSomething()', params = ['a', 'b', 'c']))
+    "function foo (a, b, c)
+        doSomething()
+    end"
     '''
-    def __init__(self, name, body = '', params = [], return_value = None):
+    def __init__(self, name = None, body = '', params = [], return_value = None):
         '''
         Inicializa la instancia
         :param name: Es el nombre del método
         :param body: Es el código del cuerpo del método.
-        :param params: Son los argumentos que recibirá el método.
+        :param params: Son los parámetros que recibirá el método.
+        :param return_value: Es el valor de retorno del método, por defecto ninguno.
         '''
         return_value = stringify(return_value)
         code = ('function {} ({})\n' \
                '{}\n' \
-               'end').format(name, ', '.join([str(param) for param in params]),
+               'end').format(name if not name is None else '', ', '.join([str(param) for param in params]),
                              body if return_value is None else '{}\nreturn {}'.format(body, return_value))
         super().__init__(code)
+
 
 
 class LuaObjectMethodCallCode(Code):
     '''
     Representa una llamada a un método de clase en LUA
+    e.g:
+    >str(LuaObjectMethodCallCode(object = 'robot', method = 'live', args = [1, 2, 3]),surround_with_assert = False)
+    "robot:live(1, 2, 3)"
+    >str(LuaObjectMethodCallCode(object = 'robot', method = 'live', args = [1, 2, 3]),surround_with_assert = True)
+    "assert(robot:live(1, 2, 3))"
     '''
     def __init__(self, object, method, args = [], surround_with_assert = True):
         '''
@@ -259,12 +302,19 @@ class LuaObjectMethodCallCode(Code):
 
 
 
+# ----- UTILIDADES PARA LA GENERACIÓN DE CÓDIGO CON SPLASH Y LUA ------
+
+
 class SplashWaitForResumeCode(LuaObjectMethodCallCode):
     '''
     Permite generar una llamada al método de clase splash:wait_for_resume, pasandole como
     parámetro un código en JS
     '''
     def __init__(self, js_code, timeout = None):
+        '''
+        :param js_code: Es código JS que se pasará como argumento a splash:wait_for_resume
+        :param timeout: Permite establecer el parámetro "timeout" al llamar a splash:wait_for_resume
+        '''
         js_code = JSFunctionCode(name = 'main', params = ['splash'],
                                      body = js_code)
         js_snippet = JSCodeWrapper(js_code)
@@ -274,6 +324,8 @@ class SplashWaitForResumeCode(LuaObjectMethodCallCode):
             args.append(timeout)
 
         super().__init__(object = 'splash', method = 'wait_for_resume', args = args)
+
+
 
 class SplashRunCode(LuaObjectMethodCallCode):
     '''
@@ -287,10 +339,21 @@ class SplashRunCode(LuaObjectMethodCallCode):
         super().__init__(object = 'splash', method = 'runjs', args = args)
 
 
+class SplashGetElementCode(LuaObjectMethodCallCode):
+    def __init__(self, selector):
+        super().__init__(object = 'splash', method = 'select', args = [selector])
+
+
+
+# ----- UTILIDADES PARA INTERACTUAR CON EL DOM DE LA PÁGINA ------
+
+
+
 class DOMEventListenerCode(SplashWaitForResumeCode):
     '''
     Esta clase se encarga de generar el código en LUA para un script con el objetivo de
     pausar la ejecución del mismo hasta que un evento en el DOM de la web ocurra.
+    No debe instanciarse. Cree objetos de alguna de sus subclases.
     '''
     def __init__(self, selectors = [], timeout = None):
         self.selectors = stringify(selectors)
@@ -319,8 +382,12 @@ class DOMEventListenerCode(SplashWaitForResumeCode):
 
 class ElementsReady(DOMEventListenerCode):
     '''
-    Esta clase genera código para que la ejecución de un script se pausé y se resuma cuando un
+    Esta clase genera código para que la ejecución de un script se pausé y se resuma hasta que un
     conjunto de elementos están disponibles en el DOM
+    e.g:
+    ElementsReady(['p', 'ul', '#some-element'])
+    Espera a que haya al menos un párrafo, una lista y un elemento con la id "some-element"
+
     '''
     def __init__(self, selectors = []):
         '''
@@ -374,6 +441,11 @@ class Click(Code):
     Es una clase que sirve para generar código que de ser ejecutado, se simulará un click sobre
     un elemento del DOM. Después de ejecutar el código generado, se garantiza que se haya clickeado
     sobre el elemento indicado (en caso contrario, la ejecución queda pausada)
+
+    e.g:
+    Click('#my-button')
+    Espera a que un elemento con el selector "my-button" esté en el DOM de la página y luego lo
+    clickea.
     '''
     def __init__(self, selector):
         '''
@@ -381,8 +453,7 @@ class Click(Code):
         :param selector: Es el selector del elemento
         '''
         code = ElementReady(selector) +\
-               LuaObjectMethodCallCode(object = LuaObjectMethodCallCode(object = 'splash', method = 'select', args = [selector]),
-                                       method = 'mouse_click')
+               LuaObjectMethodCallCode(object = SplashGetElementCode(selector), method = 'mouse_click')
         super().__init__(code)
 
 
@@ -392,6 +463,13 @@ class SendText(Code):
     DOM (de tipo input)
     La ejecución queda pausada hasta garantizar que el elemento sobre el que se ha escrito, tiene
     el valor indicado como parámetro.
+
+    e.g:
+    SendText('#my-input', 'Hello World!')
+    Espera a que haya un elemento cuya ID es "my-input" en el DOM, y luego escribe sobre él,
+    el texto "Hello World!" letra a letra. La ejecución finaliza cuando el valor del input coincide
+    con el texto: $('#my-input').val() === 'Hello World!'
+
     '''
     def __init__(self, selector, text):
         '''
@@ -399,10 +477,10 @@ class SendText(Code):
         :param selector: Es el selector del elemento
         :param text: Es el texto ha escribir en el elemento
         '''
+
         code = ElementReady(selector) +\
-               LuaObjectMethodCallCode(object = LuaObjectMethodCallCode(object = 'splash', method = 'select', args = [selector]),
-                                       method = 'send_text', args = [text]) +\
-               InputElementHasValue(selector = selector, value = text)
+               LuaObjectMethodCallCode(object = SplashGetElementCode(selector), method = 'send_text', args = [text]) +\
+               InputElementHasValue(selector=selector, value=text)
 
         super().__init__(code)
 
@@ -411,10 +489,20 @@ class Wait(Code):
     '''
     Clase que genera un código que para la ejecución del mismo al ejecutarse durante un periódo
     de tiempo específico.
+
+    e.g:
+    ElementReady('#some-element') + Wait(2) + Click('#another-element')
+    Se espera a que el elemento con la ID "some-element" esté en el DOM y luego, pasados 2 segundos,
+    se clickea sobre el elemento cuya ID es "another-element"
     '''
     def __init__(self, amount):
         code = LuaObjectMethodCallCode(object = 'splash', method = 'wait', args = [amount])
         super().__init__(code)
+
+
+
+# ----- UTILIDADES PARA DEPURAR LA CARGA DE CONTENIDO DINÁMICO CON SPLASH ------
+
 
 
 class DebugMessage(Code):
@@ -429,8 +517,8 @@ class DebugMessage(Code):
         :param message: Es un mensaje a imprimir
         '''
 
-        code = SplashRunCode(JQueryAppendCode(selector = '#debug_messages',
-                                              arg = '<li>INFO: {}</li>'.format(message)))
+        code = SplashRunCode(JSAppendHTMLToElementCode(selector = '#debug_messages',
+                                                       arg = '<li>INFO: {}</li>'.format(message)))
         super().__init__(code)
 
 
@@ -439,17 +527,25 @@ class JSDebugCode(Code):
     Esta clase genera un código para imprimir un mensaje de depuración en el DOM que se obtiene
     como resultado de evaluar código JS (en una línea)
     e.g:
-    Debug('len($("p"))') imprime el número de párrafos en el DOM.
+    Debug('len($("p"))') imprime el número de párrafos en el DOM en el panel de depuración.
     '''
     def __init__(self, js_code):
-        code = SplashRunCode(JQueryAppendCode(selector = '#debug_messages',
-                                              arg = '<li>{}</li>'.format(js_code)))
+        code = SplashRunCode(JSAppendHTMLToElementCode(selector = '#debug_messages',
+                                                       arg = '<li>{}</li>'.format(js_code)))
 
         text = '{} + {} + {}'.format(stringify('<li class="script-result">'), js_code , stringify('</li>'))
-        code += SplashRunCode(JQueryAppendCode(selector = '#debug_messages',
-                                               arg = NoEscape(text)))
+        code += SplashRunCode(JSAppendHTMLToElementCode(selector = '#debug_messages',
+                                                        arg = NoEscape(text)))
         super().__init__(code)
 
+class JSDebugElement(JSDebugCode):
+    '''
+    Esta clase genera código para añadir un mensaje en el panel de depuración, que muestre
+    información sobre uno o varios elementos del DOM
+    '''
+    def __init__(self, selector):
+
+        super().__init__('jQuery({})'.format(stringify(selector)))
 
 class DebugPanel(Code):
     '''
@@ -464,14 +560,14 @@ class DebugPanel(Code):
             </ul>
         </div>
         """
-        code = SplashRunCode(JQueryAppendCode(selector = 'body',
-                                              arg = panel))
+        code = SplashRunCode(JSAppendHTMLToElementCode(selector = 'body',
+                                                       arg = panel))
 
         # Añadimos estilos css al panel de depuración.
         with open(join(dirname(dirname(__file__)), 'static', 'css', 'debug_panel.css')) as fh:
             styles = fh.read()
-            code += SplashRunCode(JQueryAppendCode(selector = 'body',
-                                                   arg = '<style>{}</style>'.format(styles)))
+            code += SplashRunCode(JSAppendHTMLToElementCode(selector = 'body',
+                                                            arg = '<style>{}</style>'.format(styles)))
 
         super().__init__(code)
 
@@ -495,20 +591,22 @@ class LuaSplashScript(Code):
             actions = Code()
         debug_panel = DebugPanel()
         main_method_body = LuaObjectMethodCallCode(object = 'splash', method = 'go', args = [NoEscape('splash.args.url')]) +\
-                           LuaObjectMethodCallCode(object = 'splash', method = 'runjs', args = [NoEscape('splash.args.jquery')]) + \
-                           LuaObjectMethodCallCode(object = 'splash', method = 'runjs', args = [NoEscape('splash.args.scrap_utils')]) +\
+                           LuaObjectMethodCallCode(object = 'splash', method = 'runjs', args = [NoEscape('splash.args.jquery')]) +\
+                           LuaObjectMethodCallCode(object = 'splash', method = 'runjs', args = [NoEscape('splash.args.scrap_utils')]) + \
                            debug_panel + actions
 
         code = LuaFunctionCode(name = 'main', params = ['splash'],
                                body = main_method_body,
                                return_value = LuaObjectMethodCallCode(object = 'splash', method = 'html', surround_with_assert = False))
 
+
+
         # Formatear las cadenas de caracteres.
 
         super().__init__(code)
 
 
-def splash_request(url, callback, actions = None, **kwargs):
+def splash_request(url, callback, actions = None, enable_iframe_sandbox = False, **kwargs):
     '''
     Realiza una petición a la página cuya url se indica como parámetro y devuelve una instancia
     de la clase Request como valor de retorno.
@@ -533,8 +631,12 @@ def splash_request(url, callback, actions = None, **kwargs):
 
     code = LuaSplashScript(actions)
 
-    #from urllib.parse import urlencode
-    #url = 'http://localhost:5000/sandboxed?{}'.format(urlencode({'url' : url}))
+    log_file_path = join(dirname(dirname(__file__)), 'log', 'splash.log')
+    log_file_handler = logging.FileHandler(log_file_path)
+    log = logging.getLogger(__name__)
+    log.addHandler(log_file_handler)
+    log.debug(code)
+
 
 
     return SplashRequest(callback=callback,

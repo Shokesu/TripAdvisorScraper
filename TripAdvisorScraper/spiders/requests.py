@@ -23,7 +23,7 @@ SOFTWARE.
 
 from scrapy import Request
 from urllib.parse import urlencode
-from .splash_utils import splash_request, Wait, ElementReady, SendText, Click, ElementsReady
+from .splash_utils import *
 from os.path import dirname, join
 
 
@@ -121,9 +121,9 @@ class TripAdvisorRequests:
             SendText('input.typeahead_input', place) +\
             Click('#SUBMIT_HOTELS') +\
             Wait(5)
-        # CHANGE LAST WAIT {TODO}
+        #CHANGE LAST WAIT {TODO}
 
-        return cls.splash_request(actions = actions, callback = callback)
+        return cls.splash_request(actions = actions, callback = callback, enable_iframe_sandbox = True)
 
 
 
@@ -138,6 +138,7 @@ class TripAdvisorRequests:
         :param callback:
         :param page_number: Si se especifica, se clickeará de forma automática sobre el panel
         de paginación, el botón con el número indicado para actualizar el DOM y que aparezcan
+
         los hoteles de dicha página
         :return:
         '''
