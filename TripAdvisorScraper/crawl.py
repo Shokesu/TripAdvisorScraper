@@ -124,7 +124,9 @@ def crawl(*args):
     if not args['google_maps_api_key'] is None:
         local_config.set_value('GOOGLE_MAPS_API_KEY', args['google_maps_api_key'])
 
-    if local_config.is_true('SCRAP_GEO') and not local_config.is_set('GOOGLE_MAPS_API_KEY'):
+    if local_config.is_true('SCRAP_GEO') and\
+            (not local_config.is_set('GOOGLE_MAPS_API_KEY')) and\
+            (not GlobalConfig().is_set('GOOGLE_MAPS_API_KEY')):
         parser.error('You must specify Google Maps API Key')
 
     GlobalConfig().override(local_config)

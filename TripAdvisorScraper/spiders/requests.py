@@ -25,11 +25,12 @@ from scrapy import Request
 from urllib.parse import urlencode
 from .splash_utils import *
 from os.path import dirname, join
+from TripAdvisorScraper.config.config import GlobalConfig
 
 
 class TripAdvisorRequests:
     '''
-    Este clase es la encargada de gestionar la generacin de requests a la página
+    Este clase es la encargada de gestionar la generación de requests a la página
     de TripAdvisor
 
     '''
@@ -206,8 +207,7 @@ class GMapRequests:
         :param callback:
         :return:
         '''
-        with open(join(dirname(dirname(__file__)), 'keys', 'gmaps_api_key.txt'), 'r') as fh:
-            api_key = fh.read()
+        api_key = GlobalConfig().get_value('GOOGLE_MAPS_API_KEY')
         params = {
             'address' : address,
             'key' : api_key
