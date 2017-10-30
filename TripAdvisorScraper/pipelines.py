@@ -101,14 +101,17 @@ class TripAdvisorPipelineDB:
         if not isinstance(spider, TripAdvisorHotelSpider):
             return
 
-        self.db = TripAdvisorDB()
-        self.db.reset()
+        db_path = GlobalConfig().get_path('OUTPUT_SQLITE')
+        self.db = TripAdvisorDB(db_path) if not db_path is None else None
+        if not self.db is None:
+            self.db.reset()
 
 
     def close_spider(self, spider):
         if not isinstance(spider, TripAdvisorHotelSpider):
             return
-        self.db.close()
+        if not self.db is None:
+            self.db.close()
 
 
     def process_item(self, item, spider):
@@ -118,7 +121,7 @@ class TripAdvisorPipelineDB:
         :param spider:
         :return:
         '''
-        if not item is None and isinstance(spider, TripAdvisorHotelSpider):
+        if not item is None and isinstance(spider, TripAdvisorHotelSpider) and not self.db is None:
             self.db.save_item(item)
 
         return item

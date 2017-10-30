@@ -30,7 +30,7 @@ class TripAdvisorDB(Logger):
     Esta clase se encarga de gestionar la base de datos sqlite3 en la que se almacenan
     los items scrapeados de Trip Advisor.
     '''
-    def __init__(self):
+    def __init__(self, db_path):
         '''
         Inicializa la instancia. En el constructor se abre la conexión con la base de
         datos.
@@ -39,7 +39,7 @@ class TripAdvisorDB(Logger):
         Logger.__init__(self, GlobalConfig().get_path('OUTPUT_SQLITE_LOG'))
 
         self.log.debug('Connecting to TripAdvisor sqlite database...')
-        self.db = sqlite3.connect(join(dirname(__file__), 'data', 'tripadvisor.db'))
+        self.db = sqlite3.connect(db_path)
 
         self.item_handlers = {
             'TripAdvisorHotelReview': lambda item:self.insert_item(item, 'hotel_review'),
