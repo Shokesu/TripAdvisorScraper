@@ -25,3 +25,6 @@ Este fichero de configuración puede usarse para sobrecargar la variable ENABLE_
 por defecto y establecerla a True (para activar el modo depuración)
 '''
 ENABLE_DEBUG = True
+
+
+OUTPUT_DEBUG_INFO_TO_STDOUT = True

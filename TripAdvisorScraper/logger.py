@@ -45,7 +45,8 @@ class Logger:
     def __init__(self, file_path):
         self.log = logging.getLogger(file_path)
         self.log.setLevel(logging.DEBUG)
-        self.log.propagate = False
+
+        self.log.propagate = GlobalConfig().is_true('OUTPUT_DEBUG_INFO_TO_STDOUT')
 
         if GlobalConfig().is_true('ENABLE_DEBUG'):
             log_file_handler = logging.FileHandler(file_path)

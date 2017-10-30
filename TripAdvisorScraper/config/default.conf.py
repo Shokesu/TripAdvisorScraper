@@ -106,3 +106,7 @@ OUTPUT_SCRAP_LOG = '../log/tripadvisor_scrap.log'
 # Si se especifica, los mensajes de depuración del módulo encargado de almacenar los datos escrapeados
 # en sqlite, irán a este fichero.
 OUTPUT_SQLITE_LOG = '../log/tripadvisor_sqlite.log'
+
+# Si se especifica, todos los mensajes de depuración (si ENABLE_DEBUG es True), también se mostrarán
+# en la consola.
+OUTPUT_DEBUG_INFO_TO_STDOUT = False
