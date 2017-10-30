@@ -25,7 +25,8 @@ SOFTWARE.
 from os.path import join, dirname
 import json
 from .item_db import TripAdvisorDB
-from  .spiders.tripadvisor_hotel_spider import TripAdvisorHotelSpider
+from .spiders.tripadvisor_hotel_spider import TripAdvisorHotelSpider
+from TripAdvisorScraper.config.config import GlobalConfig
 import logging
 
 
@@ -37,39 +38,38 @@ class TripAdvisorPipelineJSON:
     '''
 
     def __init__(self):
-        self.feed_files = dict([(item_type, file.replace('..', join(dirname(__file__), 'data'))) for item_type, file in {
-            'TripAdvisorHotelReview' : '../tripadvisor_reviews.json',
-            'TripAdvisorHotelInfo' : '../tripadvisor_info.json',
-            'TripAdvisorHotelDeals' : '../tripadvisor_deals.json',
-            'TripAdvisorHotelGeolocation' : '../tripadvisor_geo.json',
-            'Default' : '../items.json'
-        }.items()])
+        config = GlobalConfig()
+        self.files = {
+            'TripAdvisorHotelReview' : config.get_path('OUTPUT_REVIEWS_JSON'),
+            'TripAdvisorHotelInfo' : config.get_path('OUTPUT_HOTEL_INFO_JSON'),
+            'TripAdvisorHotelDeals' : config.get_path('OUTPUT_DEALS_JSON'),
+            'TripAdvisorHotelGeolocation' : config.get_path('OUTPUT_GEO_JSON')
+        }
 
 
-    def get_feed_file(self, item):
+    def get_file(self, item):
         '''
         Devuelve la ruta del fichero donde se almacenará el item que se indica como
         parámetro
         :param item:
         :return:
         '''
-        feed_file = (self.feed_files[item.__class__.__name__]
-                     if item.__class__.__name__ in self.feed_files
-                     else self.feed_files['Default'])
+        feed_file = (self.files[item.__class__.__name__]
+                     if item.__class__.__name__ in self.files
+                     else None)
         return feed_file
 
 
     def open_spider(self, spider):
         if not isinstance(spider, TripAdvisorHotelSpider):
             return
-        for file_path in self.feed_files.values():
-            with open(file_path, 'wb') as fh:
-                pass
+        for file_path in self.files.values():
+            if not file_path is None:
+                with open(file_path, 'wb') as fh:
+                    pass
 
     def close_spider(self, spider):
-        if not isinstance(spider, TripAdvisorHotelSpider):
-            return
-
+        pass
 
     def process_item(self, item, spider):
         '''
@@ -82,8 +82,10 @@ class TripAdvisorPipelineJSON:
 
         # Almacenamos el item en su fichero correspondiente
         if not item is None and isinstance(spider, TripAdvisorHotelSpider):
-            with open(self.get_feed_file(item), 'a') as item_file_handler:
-                print(json.dumps(dict(item)), file = item_file_handler)
+            file = self.get_file(item)
+            if not file is None:
+                with open(file, 'a') as item_file_handler:
+                    print(json.dumps(dict(item)), file = item_file_handler)
 
         return item
 
