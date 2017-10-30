@@ -37,7 +37,7 @@ def crawl(*args):
     '''
     Este método inicia la ejecución del scraper de TripAdvisor y no retorna hasta que finaliza.
     :param args: Son las opciones que serán pasados al scraper de TripAdvisor
-    e.g: crawl('--option1', '-option2=sdsd')
+    e.g: crawl('--option1', '--option2=sdsd')
     :return:
     Para ver todas las opciones, ejecutar este módulo como script y escribir la opción -h
     '''
@@ -45,38 +45,87 @@ def crawl(*args):
     # Parseamos los argumentos
     parser = argparse.ArgumentParser(prog = 'TripAdvisorScraper', description = 'Scraper de TripAdvisor')
 
-    parser.add_argument('--config --config-file', nargs = 1, type=str,
-                        help = 'Path of the file configuration of the scraper, relative to the current working directory',
+    parser.add_argument('--config', nargs = '?', type=str,
+                        help = 'Path to the file configuration of the scraper, relative to the current working directory or absolute path',
                         metavar = '<CONFIG FILE>',
                         dest = 'config_file')
-    parser.add_argument('--search-by-terms --terms', nargs = '+', type=str,
+    parser.add_argument('--search-by-terms', nargs = '+', type=str,
                         help = 'Search TripAdvisor hotels by terms',
                         metavar = 'term',
                         dest = 'terms')
-    parser.add_argument('--search-by-location --location', nargs = '+', type=str,
+    parser.add_argument('--search-by-location', nargs = '+', type=str,
                         help = 'Search TripAdvisor hotels by location (country, district, city, ...)',
                         metavar = 'location',
                         dest = 'locations')
-    parser.add_argument('--debug', nargs = '?', type=bool,
-                        help = 'Enable/Disable debugging (Overrides all file configurations)',
-                        metavar = '<true/false>',
-                        dest = 'debug',
-                        default = True)
-    args = vars(parser.parse_args(args))
 
+
+    parser.add_argument('--debug', nargs='?',type=str,
+                        help = 'Enable/Disable hotel\'s reviews scraping',
+                        metavar = '<yes/no>',
+                        dest = 'debug',
+                        const = 'yes',
+                        default = None,
+                        action = 'store')
+
+    parser.add_argument('--reviews', nargs='?',type=str,
+                        help = 'Enable/Disable hotel\'s reviews scraping',
+                        metavar = '<yes/no>',
+                        dest = 'scrap_reviews',
+                        const = 'yes',
+                        default = None,
+                        action = 'store')
+
+    parser.add_argument('--deals', nargs='?', type=str,
+                        help = 'Enable/Disable hotel\'s deals scraping',
+                        metavar = '<yes/no>',
+                        dest = 'scrap_deals',
+                        const = 'yes',
+                        default = None,
+                        action = 'store')
+
+    parser.add_argument('--geo', nargs='?', type=str,
+                        help = 'Enable/Disable request info geolocation of TripAdvisor hotels from GoogleMaps API',
+                        metavar = '<true/false>',
+                        dest = 'scrap_geo',
+                        const = 'yes',
+                        default = None,
+                        action = 'store')
+
+    parser.add_argument('--gmaps-api-key', nargs='?', type=str,
+                        help = 'Configure GoogleMaps API key',
+                        metavar = '<API Key>',
+                        dest = 'google_maps_api_key',
+                        action = 'store')
+
+    args = vars(parser.parse_args(args))
 
     # Sobrecargamos las opciones pasadas por línea de comandos a la configuración global.
     local_config = Config()
 
     if not args['config_file'] is None:
         try:
-            config_file = abspath(normpath(join(getcwd(), args['config_file'][0])))
+            config_file = abspath(normpath(join(getcwd(), args['config_file'])))
             local_config.override(Config.load_from_file(config_file))
         except:
             parser.error('Failed to load configuration file')
 
     if not args['debug'] is None:
-        local_config.set_value('ENABLE_DEBUG', args['debug'][0])
+        local_config.set_value('ENABLE_DEBUG', args['debug'] == 'yes')
+
+    if not args['scrap_reviews'] is None:
+        local_config.set_value('SCRAP_REVIEWS', args['scrap_reviews'] == 'yes')
+
+    if not args['scrap_deals'] is None:
+        local_config.set_value('SCRAP_DEALS', args['scrap_deals'] == 'yes')
+
+    if not args['scrap_geo'] is None:
+        local_config.set_value('SCRAP_GEO', args['scrap_geo'] == 'yes')
+
+    if not args['google_maps_api_key'] is None:
+        local_config.set_value('GOOGLE_MAPS_API_KEY', args['google_maps_api_key'])
+
+    if local_config.is_true('SCRAP_GEO') and not local_config.is_set('GOOGLE_MAPS_API_KEY'):
+        parser.error('You must specify Google Maps API Key')
 
     GlobalConfig().override(local_config)
 
