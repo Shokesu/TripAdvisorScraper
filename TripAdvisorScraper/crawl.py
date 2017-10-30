@@ -35,10 +35,11 @@ from os.path import join, dirname, normpath, abspath
 
 def crawl(*args):
     '''
-    Este método inicial la ejecución del scraper de TripAdvisor y no retorna hasta que finalize.
+    Este método inicia la ejecución del scraper de TripAdvisor y no retorna hasta que finaliza.
     :param args: Son las opciones que serán pasados al scraper de TripAdvisor
     e.g: crawl('--option1', '-option2=sdsd')
     :return:
+    Para ver todas las opciones, ejecutar este módulo como script y escribir la opción -h
     '''
 
     # Parseamos los argumentos
@@ -56,10 +57,11 @@ def crawl(*args):
                         help = 'Search TripAdvisor hotels by location (country, district, city, ...)',
                         metavar = 'location',
                         dest = 'locations')
-    parser.add_argument('--debug', nargs = 1, type=bool,
+    parser.add_argument('--debug', nargs = '?', type=bool,
                         help = 'Enable/Disable debugging (Overrides all file configurations)',
                         metavar = '<true/false>',
-                        dest = 'debug')
+                        dest = 'debug',
+                        default = True)
     args = vars(parser.parse_args(args))
 
 
