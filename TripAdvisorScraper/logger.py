@@ -46,11 +46,10 @@ class Logger:
         self.log = logging.getLogger(file_path)
         self.log.setLevel(logging.DEBUG)
 
-        self.log.propagate = GlobalConfig().is_true('OUTPUT_DEBUG_INFO_TO_STDOUT')
-
         if GlobalConfig().is_true('ENABLE_DEBUG'):
             log_file_handler = logging.FileHandler(file_path)
             self.log.addHandler(log_file_handler)
+            self.log.propagate = GlobalConfig().is_true('OUTPUT_DEBUG_INFO_TO_STDOUT')
 
     def __getattr__(self, item):
         return getattr(self.log, item)
