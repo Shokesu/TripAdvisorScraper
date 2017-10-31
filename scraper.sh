@@ -1,4 +1,4 @@
 #!/bin/sh
 
 export PYTHONPATH=$PWD
-python3 TripAdvisorScraper/crawl.py $@
+python3 TripAdvisorScraper/crawl.py "$*"
