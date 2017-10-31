@@ -72,6 +72,10 @@ OUTPUT_HOTEL_INFO_JSON = '../data/tripadvisor_info.json'
 #se introducirán en el fichero que se indica en esta variable en formato JSON
 OUTPUT_HOTEL_GEO_JSON = '../data/tripadvisor_geo.json'
 
+# Si se especifica, se creado un fichero JSON donde se vuelca toda la información escrapeada
+# (se necesita indicar la opción OUTPUT_SQLITE)
+OUTPUT_BULK_JSON = '../data/tripadvisor_bulk.json'
+
 
 # Si se indica, toda la información guardada se almacenará en una base de datos sqlite, cuya
 # ruta se indica en esta variable

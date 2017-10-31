@@ -162,10 +162,14 @@ class TripAdvisorPipelineBulkJSON:
         if not isinstance(spider, TripAdvisorHotelSpider):
             return
 
-        with TripAdvisorDB() as db:
-            data = db.get_everything()
-            with open(join(dirname(__file__), 'data', 'tripadvisor_bulk.json'), 'w') as fh:
-                fh.write(json.dumps(data))
+        config = GlobalConfig()
+        db_path = config.get_path('OUTPUT_SQLITE')
+        file_path = config.get_path('OUTPUT_BULK_JSON')
+        if not db_path is None and not file_path is None:
+            with TripAdvisorDB(db_path) as db:
+                data = db.get_everything()
+                with open(file_path, 'w') as fh:
+                    fh.write(json.dumps(data))
 
     def open_spider(self, spider):
         pass
