@@ -145,6 +145,24 @@ class Config:
         self.vars.update(other.vars)
 
 
+    def check(self):
+        '''
+        Valida la configuración actual. Si la configuración actual no es válida, genera una
+        excepción
+        :return:
+        '''
+        try:
+            if not (self.is_set('SEARCH_BY_TERMS') != self.is_set('SEARCH_BY_LOCATION')):
+                raise Exception('You must specify "{}" or "{}", but not both or no one'.format(
+                    'SEARCH_BY_TERMS', 'SEARCH_BY_LOCATION'
+                ))
+
+            if self.is_set('SCRAP_GEO') and not self.is_set('GOOGLE_MAPS_API_KEY'):
+                raise Exception('You must specify a valid Google Maps API Key to scrap hotel\'s geolocation info')
+
+        except Exception as e:
+            raise ValueError('Configuration is not valid: {}'.format(str(e)))
+
     def __str__(self):
         return str(self.vars)
 

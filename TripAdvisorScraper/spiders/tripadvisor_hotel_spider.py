@@ -57,10 +57,13 @@ class TripAdvisorHotelSpider(Spider, Logger):
         Si terms es None, se escrapearán los hoteles que se encuentren realizando una búsqueda
         por localización.
         '''
-        Spider.__init__(self)
-        Logger.__init__(self, GlobalConfig().get_path('OUTPUT_SCRAP_LOG'))
+        config = GlobalConfig()
 
-        GlobalConfig().override(Config(kwargs))
+        Spider.__init__(self)
+        Logger.__init__(self, config.get_path('OUTPUT_SCRAP_LOG'))
+
+        config.override(Config(kwargs))
+        config.check()
 
 
     def log_html_page(self, response):
