@@ -65,7 +65,10 @@ class TripAdvisorPipelineJSON:
             return
         for file_path in self.files.values():
             if not file_path is None:
-                with open(file_path, 'wb') as fh:
+                try:
+                    with open(file_path, 'wb'):
+                        pass
+                except:
                     pass
 
     def close_spider(self, spider):
@@ -84,9 +87,11 @@ class TripAdvisorPipelineJSON:
         if not item is None and isinstance(spider, TripAdvisorHotelSpider):
             file = self.get_file(item)
             if not file is None:
-                with open(file, 'a') as item_file_handler:
-                    print(json.dumps(dict(item)), file = item_file_handler)
-
+                try:
+                    with open(file, 'a') as item_file_handler:
+                        print(json.dumps(dict(item)), file = item_file_handler)
+                except:
+                    pass
         return item
 
 
@@ -102,9 +107,13 @@ class TripAdvisorPipelineDB:
             return
 
         db_path = GlobalConfig().get_path('OUTPUT_SQLITE')
-        self.db = TripAdvisorDB(db_path) if not db_path is None else None
-        if not self.db is None:
+        try:
+            if db_path is None:
+                raise Exception()
+            self.db = TripAdvisorDB(db_path)
             self.db.reset()
+        except:
+            self.db = None
 
 
     def close_spider(self, spider):
@@ -166,10 +175,13 @@ class TripAdvisorPipelineBulkJSON:
         db_path = config.get_path('OUTPUT_SQLITE')
         file_path = config.get_path('OUTPUT_BULK_JSON')
         if not db_path is None and not file_path is None:
-            with TripAdvisorDB(db_path) as db:
-                data = db.get_everything()
-                with open(file_path, 'w') as fh:
-                    fh.write(json.dumps(data))
+            try:
+                with TripAdvisorDB(db_path) as db:
+                    data = db.get_everything()
+                    with open(file_path, 'w') as fh:
+                        fh.write(json.dumps(data))
+            except:
+                pass
 
     def open_spider(self, spider):
         pass
