@@ -70,7 +70,7 @@ OUTPUT_HOTEL_INFO_JSON = '../data/tripadvisor_info.json'
 
 # Si se especifica, la información relativa a la geolocalización de los hoteles escrapeados
 #se introducirán en el fichero que se indica en esta variable en formato JSON
-OUTPUT_HOTEL_GEO_JSON = '../data/tripadvisor_geo.json'
+OUTPUT_GEO_JSON = '../data/tripadvisor_geo.json'
 
 # Si se especifica, se creado un fichero JSON donde se vuelca toda la información escrapeada
 # (se necesita indicar la opción OUTPUT_SQLITE)
@@ -101,3 +101,20 @@ OUTPUT_SQLITE_LOG = '../log/tripadvisor_sqlite.log'
 # Si se especifica, todos los mensajes de depuración (si ENABLE_DEBUG es True), también se mostrarán
 # en la consola.
 OUTPUT_DEBUG_INFO_TO_STDOUT = False
+
+
+
+# CONFIGURACIÓN DE EJECUCIÓN DEL SCRAPER
+
+# Si se especifica, el scraper obtendrá hoteles haciendo una búsqueda por los términos que se indican
+# en esta variable.
+# Esta variable suele sustituirse por el valor que se indica en la opción --search-by-terms del script
+# que se facilita para ejecutar el scraper.
+#SEARCH_BY_TERMS = 'Hotel Blanca Navarra'
+
+
+# Si se indica, el scraper obtendrá hoteles haciendo una búsqueda por localización. Esta variable
+# de configuración se usa si no se ha establecido "SEARCH_BY_TERMS"
+# Esta variable suele sustituirse por el valor que se indica en la opción --search-by-location del script
+# que se facilita para ejecutar el scraper.
+#SEARCH_BY_LOCATION = 'Pamplona, Navarra, Spain'
