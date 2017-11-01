@@ -38,7 +38,6 @@ import webbrowser
 from TripAdvisorScraper.logger import Logger
 from TripAdvisorScraper.config.config import GlobalConfig, Config
 
-
 class TripAdvisorHotelSpider(Spider, Logger):
     # Nombre de nuestra araña
     name = 'TripAdvisorHotelSpider'
@@ -64,6 +63,11 @@ class TripAdvisorHotelSpider(Spider, Logger):
 
         config.override(Config(kwargs))
         config.check()
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        GlobalConfig().override(Config(crawler.settings))
+        return cls(*args, **kwargs)
 
 
     def log_html_page(self, response):
