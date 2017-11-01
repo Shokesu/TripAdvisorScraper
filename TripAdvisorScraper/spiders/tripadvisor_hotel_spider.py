@@ -36,7 +36,7 @@ from .requests import *
 import json
 import webbrowser
 from TripAdvisorScraper.logger import Logger
-from TripAdvisorScraper.config.config import GlobalConfig
+from TripAdvisorScraper.config.config import GlobalConfig, Config
 
 
 class TripAdvisorHotelSpider(Spider, Logger):
@@ -44,7 +44,7 @@ class TripAdvisorHotelSpider(Spider, Logger):
     name = 'TripAdvisorHotelSpider'
 
 
-    def __init__(self, terms = None, locations = None):
+    def __init__(self, **kwargs):
         '''
         Inicializa esta instancia.
         :param terms: Es un parámetro opcional que indica los términos de busqueda para
@@ -60,8 +60,7 @@ class TripAdvisorHotelSpider(Spider, Logger):
         Spider.__init__(self)
         Logger.__init__(self, GlobalConfig().get_path('OUTPUT_SCRAP_LOG'))
 
-        self.terms = terms
-        self.locations = locations
+        GlobalConfig().override(Config(kwargs))
 
 
     def log_html_page(self, response):
@@ -86,13 +85,14 @@ class TripAdvisorHotelSpider(Spider, Logger):
         :return: Devuelve un generador, que genera instancias de la
         clase scrapy.Request
         '''
-        if not self.terms is None:
+        config = GlobalConfig()
+        if config.is_set('SEARCH_BY_TERMS'):
             yield TripAdvisorRequests.search_hotels_by_terms(
-                terms=self.terms,
+                terms=config.get_value('SEARCH_BY_TERMS'),
                 callback=self.parse_hotel_search_by_terms)
         else:
             yield TripAdvisorRequests.search_hotels_by_place(
-                place=self.locations,
+                place=config.get_value('SEARCH_BY_LOCATION'),
                 callback=self.parse_hotel_search_by_place)
 
 

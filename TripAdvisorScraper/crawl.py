@@ -129,9 +129,6 @@ def crawl(*args):
             (not GlobalConfig().is_set('GOOGLE_MAPS_API_KEY')):
         parser.error('You must specify Google Maps API Key')
 
-    GlobalConfig().override(local_config)
-
-    # Parseamos también opciones adicionales para el scraper
     terms = args['terms']
     locations = args['locations']
 
@@ -140,9 +137,12 @@ def crawl(*args):
 
     if not locations is None:
         locations = ', '.join(locations)
+        local_config.set_value('SEARCH_BY_LOCATION', locations)
     if not terms is None:
         terms = ' '.join(terms)
+        local_config.set_value('SEARCH_BY_TERMS', terms)
 
+    GlobalConfig().override(local_config)
 
     # Ejecutamos el scraper
     process = CrawlerProcess(get_project_settings())
