@@ -157,7 +157,7 @@ class Config:
                     'SEARCH_BY_TERMS', 'SEARCH_BY_LOCATION'
                 ))
 
-            if self.is_set('SCRAP_GEO') and not self.is_set('GOOGLE_MAPS_API_KEY'):
+            if self.is_true('SCRAP_GEO') and not self.is_set('GOOGLE_MAPS_API_KEY'):
                 raise Exception('You must specify a valid Google Maps API Key to scrap hotel\'s geolocation info')
 
         except Exception as e:

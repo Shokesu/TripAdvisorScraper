@@ -34,7 +34,7 @@ en el fichero de configuración que se pase como parámetro al scraper, sustiuir
 SCRAP_REVIEWS = True
 
 # Activa/Desactiva el escrapeo de las geolocalizaciones de los hoteles
-SCRAP_GEO = True
+SCRAP_GEO = False
 
 # Indica la clave API a usar para obtener las geolocalizaciones de los hoteles
 # a partir de la información scrapeada de los hoteles (dirección fisica del hotel)
