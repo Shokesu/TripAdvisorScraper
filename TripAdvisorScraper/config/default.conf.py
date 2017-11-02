@@ -25,6 +25,7 @@ Esta es la configuración por defecto del scraper de TripAdvisor. Los campos que
 en el fichero de configuración que se pase como parámetro al scraper, sustiuirán a los de este.
 '''
 
+from TripAdvisorScraper.config.config import Path
 
 
 # CONFIGURACIÓN DE ESCRAPEO
@@ -56,30 +57,30 @@ Pueden especificarse rutas relativas y absolutas.
 
 # Si se especifica, la información de las reviews escrapeadas se introducirán en el fichero
 # que se indica en esta variable en formato JSON
-OUTPUT_REVIEWS_JSON = '../data/tripadvisor_reviews.json'
+OUTPUT_REVIEWS_JSON = Path('../data/tripadvisor_reviews.json')
 
 # Si se especifica, la información de las deals  escrapeadas se introducirán en el fichero
 # que se indica en esta variable en formato JSON
-OUTPUT_DEALS_JSON = '../data/tripadvisor_deals.json'
+OUTPUT_DEALS_JSON = Path('../data/tripadvisor_deals.json')
 
 
 # Si se especifica, la información de los hoteles se introducirá en el fichero
 # que se indica en esta variable en formato JSON
-OUTPUT_HOTEL_INFO_JSON = '../data/tripadvisor_info.json'
+OUTPUT_HOTEL_INFO_JSON = Path('../data/tripadvisor_info.json')
 
 
 # Si se especifica, la información relativa a la geolocalización de los hoteles escrapeados
 #se introducirán en el fichero que se indica en esta variable en formato JSON
-OUTPUT_GEO_JSON = '../data/tripadvisor_geo.json'
+OUTPUT_GEO_JSON = Path('../data/tripadvisor_geo.json')
 
 # Si se especifica, se creado un fichero JSON donde se vuelca toda la información escrapeada
 # (se necesita indicar la opción OUTPUT_SQLITE)
-OUTPUT_BULK_JSON = '../data/tripadvisor_bulk.json'
+OUTPUT_BULK_JSON = Path('../data/tripadvisor_bulk.json')
 
 
 # Si se indica, toda la información guardada se almacenará en una base de datos sqlite, cuya
 # ruta se indica en esta variable
-OUTPUT_SQLITE = '../data/tripadvisor.db'
+OUTPUT_SQLITE = Path('../data/tripadvisor.db')
 
 
 
@@ -91,12 +92,12 @@ ENABLE_DEBUG = False
 
 
 # Si se indica, los mensajes de depuración y de información del scraper irán a este fichero.
-OUTPUT_SCRAP_LOG = '../log/tripadvisor_scrap.log'
+OUTPUT_SCRAP_LOG = Path('../log/tripadvisor_scrap.log')
 
 
 # Si se especifica, los mensajes de depuración del módulo encargado de almacenar los datos escrapeados
 # en sqlite, irán a este fichero.
-OUTPUT_SQLITE_LOG = '../log/tripadvisor_sqlite.log'
+OUTPUT_SQLITE_LOG = Path('../log/tripadvisor_sqlite.log')
 
 # Si se especifica, todos los mensajes de depuración (si ENABLE_DEBUG es True), también se mostrarán
 # en la consola.

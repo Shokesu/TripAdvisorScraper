@@ -24,13 +24,13 @@ from copy import copy
 from os.path import dirname, join, normpath, basename
 import importlib.util
 from re import match
-
+import inspect, sys
 
 class Config:
     '''
     Esta clase representa una configuración para el scraper.
     '''
-    def __init__(self, vars = {}, root_path = None):
+    def __init__(self, vars = {}):
         '''
         Inicializa la instancia.
         :param vars: Es un diccionario donde los claves son los nombres de las variables,
@@ -40,7 +40,6 @@ class Config:
         el directorio padre de este script
         '''
         self.vars = copy(vars)
-        self.root_path = root_path if not root_path is None else dirname(__file__)
 
     def get_value(self, var, default = None):
         '''
@@ -89,29 +88,19 @@ class Config:
         '''
         return self.has_value(var, True)
 
-    def get_root_path(self):
-        '''
-        :return: Devuelva la ruta raíz para procesar las rutas relativas especificadas en
-        las variables de configuración
-        '''
-        return self.root_path
 
     def get_path(self, var, default = None):
         '''
         Devuelve la variable indicada como parámetro (ruta a un fichero) normalizada (se procesan
         rutas relativas)
-        La ruta será relativa al directorio padre de get_path()
-        Si la variable no es de tipo string o no esta establecida, devuelve el parámetro "default"
-        indicado, que por defecto es None
         :param var:
         :param default:
         :return:
         '''
         value = self.get_value(var)
-        if value is None or not isinstance(value, str):
+        if value is None or not isinstance(value, (str, Path)):
             return default
-
-        return normpath(join(self.get_root_path(), value))
+        return normpath(str(value))
 
 
     @staticmethod
@@ -123,13 +112,13 @@ class Config:
         :return: Devuelve una instancia de la clase Config.
         '''
         try:
-            location = normpath(join(dirname(__file__), file))
+            location = file
             config_module_name = match('^([^\.]+)(\..*)?$', basename(location)).group(1)
 
             spec = importlib.util.spec_from_file_location('config.{}'.format(config_module_name), location)
             config_module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(config_module)
-            return Config(dict([(key, value) for key, value in config_module.__dict__.items() if not match('^__.*__$', key)]), root_path = dirname(location))
+            return Config(dict([(key, value) for key, value in config_module.__dict__.items() if not match('^__.*__$', key)]))
         except:
             raise Exception('Failed to load configuration from file')
 
@@ -178,7 +167,7 @@ class DefaultConfig:
     class __Singleton(Config):
         def __init__(self):
             super().__init__()
-            self.override(Config.load_from_file('default.conf.py'))
+            self.override(Config.load_from_file(join(dirname(__file__), 'default.conf.py')))
 
     singleton = None
     def __init__(self):
@@ -214,3 +203,18 @@ class GlobalConfig:
 
     def __str__(self):
         return str(GlobalConfig.singleton)
+
+
+class Path:
+    '''
+    Esta clase se usa para configurar rutas a ficheros en las variables de configuración.
+    '''
+    def __init__(self, file):
+        root_path = dirname(inspect.getfile(sys._getframe(1)))
+        self.path = normpath(join(root_path, file))
+
+    def get_path(self):
+        return self.path
+
+    def __str__(self):
+        return self.get_path()
