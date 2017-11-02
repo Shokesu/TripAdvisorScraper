@@ -38,7 +38,7 @@ import webbrowser
 from TripAdvisorScraper.logger import Logger
 from TripAdvisorScraper.config.config import GlobalConfig, Config
 
-class TripAdvisorHotelSpider(Spider, Logger):
+class TripAdvisorHotelSpider(Spider):
     # Nombre de nuestra araña
     name = 'TripAdvisorHotelSpider'
 
@@ -56,10 +56,10 @@ class TripAdvisorHotelSpider(Spider, Logger):
         Si terms es None, se escrapearán los hoteles que se encuentren realizando una búsqueda
         por localización.
         '''
-        config = GlobalConfig()
-
         Spider.__init__(self)
-        Logger.__init__(self, config.get_path('OUTPUT_SCRAP_LOG'))
+
+        config = GlobalConfig()
+        self.log = Logger(config.get_path('OUTPUT_SCRAP_LOG'))
 
         config.override(Config(kwargs))
         config.check()
@@ -82,7 +82,6 @@ class TripAdvisorHotelSpider(Spider, Logger):
         with open(html_page_path, 'wb') as fh:
             fh.write(response.body)
         webbrowser.open(html_page_path)
-
 
 
     def start_requests(self):
