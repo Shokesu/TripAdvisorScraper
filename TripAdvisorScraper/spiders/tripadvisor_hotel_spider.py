@@ -130,7 +130,7 @@ class TripAdvisorHotelSpider(Spider):
                                                          fetch_deals = True)
 
         except ValueError:
-            raise ValueError('No hotel found with the search terms: {}'.format(self.query))
+            raise ValueError('No hotel found with the search terms: {}')
 
         # Parseamos la siguiente página de resultados
         # TODO
