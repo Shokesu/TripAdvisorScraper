@@ -1,0 +1,11 @@
+{#
+Autor: Víctor Ruiz Gómez https://github.com/Vykstorm
+#}
+        {# Add some scripts  #}
+        {% set footer_scripts = (footer_scripts | default([])) %}
+
+        {% for script in footer_scripts %}
+         <script type="text/javascript" src="{{'/static/js/' + script}}"></script>
+        {% endfor %}
+	</body>
+</html>

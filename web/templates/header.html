@@ -1,0 +1,27 @@
+{#
+Autor: Víctor Ruiz Gómez https://github.com/Vykstorm
+#}
+
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>{% block title %} {{ title | default('TripAdvisor Scraper') }} {% endblock %}</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        {# Add some style sheets #}
+        {% set stylesheets = (stylesheets | default([])) %}
+
+        {% for stylesheet in stylesheets %}
+        <link href="{{'/static/css/' + stylesheet}}" rel="stylesheet">
+        {% endfor %}
+
+        {# Add some scripts  #}
+        {% set header_scripts = (header_scripts | default([])) %}
+        {% for script in header_scripts %}
+         <script type="text/javascript" src="{{ '/static/js/' + script}}"></script>
+        {% endfor %}
+    </head>
+    <body>

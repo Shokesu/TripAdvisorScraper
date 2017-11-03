@@ -1,0 +1,11 @@
+{% set stylesheets = ['common.css', 'view_data.css'] %}
+{% set header_scripts = [] %}
+{% set footer_scripts = ['jquery.min.js', 'gmaps.js'] %}
+{% set title = 'Scraping TripAdvisor...' %}
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Scraping hotels at "{{current_search_location}}"</h1>
+<div id="map">
+</div>
+{% endblock %}

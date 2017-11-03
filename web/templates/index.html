@@ -1,0 +1,21 @@
+{% set stylesheets = ['common.css', 'index.css'] %}
+{% set header_scripts = [] %}
+{% set footer_scripts = ['jquery.min.js'] %}
+{% extends "base.html" %}
+{% block content %}
+<div id="wrapper">
+    <img id="tripadvisor_logo" src="/static/images/tripadvisor.png" />
+    <h1>
+        Scrap TripAdvisor Hotels
+    </h1>
+
+    <form id="search_form" class="form-wrapper" action="/start" method="GET">
+        <input placeholder="Pamplona, Navarra, Spain" id="search" name="location" type="text"/>
+        <input type="submit" value="GO" id="submit">
+    </form>
+
+    <p id="author">
+        Created by Victor Ruiz Gómez
+    </p>
+</div>
+{% endblock %}
