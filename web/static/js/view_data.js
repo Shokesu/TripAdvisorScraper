@@ -33,7 +33,7 @@ initMap = function() {
             clearInterval(get_geo_data_interval);
     }
     get_geo_data_interval = setInterval(function() {
-        $.getJSON({ url : '/get-geo-data',
+        $.getJSON({ url : '/get-data',
                     success : callback});
     }, 2000);
 }

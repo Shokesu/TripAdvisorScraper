@@ -50,6 +50,11 @@ class Logger:
 
         if GlobalConfig().is_true('ENABLE_DEBUG'):
             try:
+                with open(file_path, 'wb') as fh:
+                    pass
+            except:
+                pass
+            try:
                 log_file_handler = logging.FileHandler(file_path)
                 self.log.addHandler(log_file_handler)
             except:
