@@ -33,3 +33,4 @@ Twisted==16.2.0
 w3lib==1.18.0
 xvfbwrapper==0.2.9
 zope.interface==4.4.3
+Flask==0.12.2
