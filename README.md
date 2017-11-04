@@ -78,3 +78,18 @@ https://github.com/Shokesu/TripAdvisorScraper/blob/master/TripAdvisorScraper/con
 
 
 
+
+# Cliente WEB
+
+También está disponible un pequeño cliente web que puede usarse para depurar el scraper.
+```
+cd TripAdvisorScraper
+./scraper-web-client.sh
+```
+El código anterior inicializará el cliente web.
+Abre el navegador e introduce la url http://localhost:5000/
+
+![Web Client](/docs/screenshots/web-client.png?raw=true "Optional Title")
+
+ 
+
