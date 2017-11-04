@@ -43,12 +43,12 @@ class Logger:
     '''
 
     def __init__(self, file_path):
-        self.log = logging.getLogger(file_path)
+        self.log = logging.getLogger(str(self))
         self.log.setLevel(logging.DEBUG)
 
         self.log.propagate = GlobalConfig().is_true('ENABLE_DEBUG') and GlobalConfig().is_true('OUTPUT_DEBUG_INFO_TO_STDOUT')
 
-        if GlobalConfig().is_true('ENABLE_DEBUG'):
+        if GlobalConfig().is_true('ENABLE_DEBUG') and not file_path is None:
             try:
                 with open(file_path, 'wb') as fh:
                     pass
