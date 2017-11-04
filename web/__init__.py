@@ -177,6 +177,10 @@ def get_log():
     return json.dumps(logs)
 
 
+@app.route('/get-json-data', methods = ['GET'])
+def get_json():
+    pass
+
 
 if __name__ == '__main__':
     '''

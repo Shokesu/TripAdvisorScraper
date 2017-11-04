@@ -1,11 +1,15 @@
-{% set stylesheets = ['common.css', 'view_data.css', 'log_console.css'] %}
+{% set stylesheets = ['common.css', 'view_data.css', 'log_console.css', 'download_modal.css'] %}
 {% set header_scripts = [] %}
-{% set footer_scripts = ['jquery.min.js', 'view_data.js', 'log_console.js'] %}
+{% set footer_scripts = ['jquery.min.js', 'view_data.js', 'log_console.js', 'download_data.js'] %}
 {% set title = 'Scraping TripAdvisor...' %}
 {% extends "base.html" %}
 {% block content %}
 
-<h1>Scraping hotels at "{{location}}"</h1>
+<div id="header">
+    <h1>Scraping hotels at "{{location}}"</h1>
+    <button id="download-all-data" class="open_button">Download all data</button>
+    <button id="download-data" class="open_button">Download avaliable data</button>
+</div>
 <table>
     <tr>
         <td rowspan="2" id="map-container">
@@ -77,5 +81,17 @@
         </td>
     </tr>
 </table>
+
+
+<div class="modal_info" id="download-data-panel">
+    <h1 id="download-data-panel-title">Download data</h1>
+    <div id="download-data-panel-info"></div>
+    <div id="download-data-options">
+        <img id="download-json" src="/static/images/json.png" alt="download JSON"/>
+        <img id="download-sqlite" src="/static/images/sqlite.png" alt="download SQLITE" />
+    </div>
+</div>
+<div class="modal_overlay">
+</div>
 
 {% endblock %}

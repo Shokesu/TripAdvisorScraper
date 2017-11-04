@@ -1,17 +1,7 @@
 
 
-/*
-#map {
-    width : 500px;
-    height : 500px;
-}
-
-#info, #status-info {
-    width : 400px;
-}
-*/
-
-h1 {
+#header h1 {
+    display : inline-block;
     text-align : center;
 }
 
@@ -37,6 +27,20 @@ h1 {
     padding-left : 20px;
 }
 
+#header {
+    width : 90vw;
+    header : 10vh;
+    margin : auto;
+}
+
+#header button {
+    float : right;
+    margin-left : 17px;
+    vertical-align : middle;
+    position : relative;
+    top : 5vh;
+    transform : translateY(-50%);
+}
 
 
 .hotel_name {
@@ -127,4 +131,27 @@ h1 {
 
 .info-table .delete:hover {
   color: #dc2a2a;
+}
+
+
+button {
+  margin: 0 auto;
+  font-size: 1.0rem;
+  padding: 0.9rem 1.6rem;
+  background-color: #ed1c40;
+  border: 1px solid transparent;
+  color: #ffffff;
+  font-weight: 100;
+  -webkit-border-radius: 3px;
+  border-radius: 3px;
+  -webkit-transition: all 0.3s ease-in-out;
+  -moz-transition: all 0.3s ease-in-out;
+  transition: all 0.3s ease-in-out;
+}
+
+button:hover {
+  background-color: #ffffff;
+  color: #ed1c40;
+  border-color: #ed1c40;
+  cursor : pointer;
 }
