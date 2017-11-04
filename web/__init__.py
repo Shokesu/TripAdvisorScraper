@@ -24,12 +24,13 @@ SOFTWARE.
 Este script ejecuta el cliente web del scraper de TripAdvisor usando el framework Flask
 '''
 
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, make_response
 from os.path import dirname, join
 import json
 import sqlite3 as sqlite
 from web.scraper import TripAdvisorScraper
-
+from TripAdvisorScraper.config.config import GlobalConfig, Config
+from TripAdvisorScraper.item_db import TripAdvisorDB
 
 # Configuración de directorios de recursos
 
@@ -112,7 +113,7 @@ def get_data():
     :return:
     '''
     try:
-        with sqlite.connect(join(dirname(__file__), 'data', 'tripadvisor.db')) as db:
+        with sqlite.connect(GlobalConfig().get_path('OUTPUT_SQLITE')) as db:
             cursor = db.cursor()
             cursor.execute(
                 """
@@ -179,15 +180,43 @@ def get_log():
 
 @app.route('/get-json-data', methods = ['GET'])
 def get_json():
-    pass
+    '''
+    Sobre la ruta "/get-json-data" se obtienen los datos escrapeados en formato JSON
+    :return:
+    '''
+    try:
+        with TripAdvisorDB(db_path = GlobalConfig().get_path('OUTPUT_SQLITE')) as db:
+            data = db.get_everything()
+    except:
+        data = []
 
+    response = make_response(json.dumps(data))
+    response.headers['Content-Disposition'] = 'attachment; filename=tripadvisor.json'
+    return response
+
+
+@app.route('/get-sqlite-data', methods = ['GET'])
+def get_sqlite():
+    '''
+    Sobre la ruta "/get-sqlite-data" se obtiene el fichero de base de datos sqlite con los
+    datos escrapeados hasta el momento
+    :return:
+    '''
+    try:
+        with open(GlobalConfig().get_path('OUTPUT_SQLITE'), 'rb') as fh:
+            data = fh.read()
+    except:
+        return 'Error fetching sqlite file database'
+
+    response = make_response(data)
+    response.headers['Content-Disposition'] = 'attachment; filename=tripadvisor.db'
+    return response
 
 if __name__ == '__main__':
+    GlobalConfig().override(Config.load_from_file(join(dirname(__file__), 'scraper.conf.py')))
     '''
     Para iniciar el servidor Flask, ejecutar este script
     '''
     app.run()
-
-
 
 
