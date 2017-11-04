@@ -31,8 +31,6 @@ from TripAdvisorScraper.crawl import crawl
 from os.path import join, dirname
 from multiprocessing import Process, Queue, Lock
 
-
-
 class TripAdvisorScraper:
     '''
     Esta clase se encarga de ejecutar el scraper de TripAdvisor.
@@ -58,9 +56,10 @@ class TripAdvisorScraper:
             :param location:
             :return:
             '''
+            config_file = join(dirname(__file__), 'scraper.conf.py')
             def __crawl(location):
                 args = [
-                    '--config={}'.format(join(dirname(__file__), 'scraper.conf.py')),
+                    '--config={}'.format(config_file),
                     '--search-by-location=\"{}\"'.format(location)
                 ]
                 crawl(*args)
@@ -68,6 +67,7 @@ class TripAdvisorScraper:
             def worker(lock, location):
                 __crawl(location)
                 lock.release()
+
 
             self.current_search_location = location
             if self.lock.acquire(False):
@@ -89,15 +89,13 @@ class TripAdvisorScraper:
             return True
 
 
-        def get_current_search_info(self):
+        def get_current_search_location(self):
             '''
-            :return: Devuelve un diccionario con información sobre el estado actual
-            del scraper en ejecución. Debe haberse invocado el método search_by_location
+            :return: Devuelve la zona donde se están escrapeando hoteles actualmente
+            Debe haberse invocado el método search_by_location
             antes de llamar a esta función.
             '''
-            return {
-                'current_search_location' : self.current_search_location
-            }
+            return self.current_search_location
 
     instance = None
     def __init__(self):

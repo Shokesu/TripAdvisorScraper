@@ -94,21 +94,21 @@ def view_data():
     puede visualizar de forma gráfica los datos escrapeados.
     :return:
     '''
-    if not TripAdvisorScraper().is_running():
-        return redirect('/')
+    #if not TripAdvisorScraper().is_running():
+    #    return redirect('/')
     context = {}
-    context.update(TripAdvisorScraper().get_current_search_info())
+    context['location'] = TripAdvisorScraper().get_current_search_location()
     return render_template('view_data.html', **context)
 
 
 
 
 
-@app.route('/get-geo-data', methods = ['GET'])
+@app.route('/data', methods = ['GET'])
 def get_data():
     '''
-    Una petición GET a esta ruta ("/get-geo-data") devolverá información geográfica de los
-    hoteles escrapeados de TripAdvisor.
+    Una petición GET a esta ruta ("/data") devolverá información sobre los hoteles
+    escrapeados en TripAdvisor.
     :return:
     '''
     try:
@@ -119,23 +119,62 @@ def get_data():
                 SELECT id, name, address, latitude, longitude
                 FROM hotel_geo AS geo INNER JOIN hotel_info as info ON geo.hotel_id = info.id 
                 """)
-            data = []
+            hotel_data = []
             for register in cursor.fetchall():
                 id, name, address, latitude, longitude = register
-                data.append({
+                hotel_data.append({
                     'id' : id,
                     'name' : name,
                     'address' : address,
                     'latitude' : latitude,
                     'longitude' : longitude
                 })
+
+            cursor.execute('SELECT COUNT(*) FROM hotel_info')
+            num_hotels, = cursor.fetchone()
+
+            cursor.execute('SELECT COUNT(*) FROM hotel_deal')
+            num_deals, = cursor.fetchone()
+
+            cursor.execute('SELECT COUNT(*) FROM hotel_review')
+            num_reviews, = cursor.fetchone()
+
+            cursor.execute('SELECT COUNT(*) FROM hotel_geo')
+            num_geolocalized_hotels, = cursor.fetchone()
+
+
     except Exception as e:
-        print(e)
-        data = []
-    return json.dumps({ 'geo-data' : data, 'scrap_finished' : not TripAdvisorScraper().is_running() })
+        hotel_data = []
+        num_hotels = 0
+        num_geolocalized_hotels = 0
+        num_deals = 0
+        num_reviews = 0
+
+    return json.dumps({ 'hotel-data' : hotel_data,
+                        'meta' : {
+                            'num_hotels' : num_hotels,
+                            'num_geolocalized_hotels' : num_geolocalized_hotels,
+                            'num_deals' : num_deals,
+                            'num_reviews' : num_reviews
+                        },
+                        'scraper_finished' : not TripAdvisorScraper().is_running() })
 
 
 
+@app.route('/logs', methods = ['GET'])
+def get_log():
+    '''
+    Sobre la ruta "/logs" se sirve el log del scraper.
+    :return:
+    '''
+    logs = ['./scraper --search-by-location="{}"'.format(TripAdvisorScraper().get_current_search_location())]
+    try:
+        with open(join(dirname(__file__), 'log', 'scraper.log'), 'r') as fh:
+            logs += fh.read().split('\n')
+    except:
+        pass
+
+    return json.dumps(logs)
 
 
 

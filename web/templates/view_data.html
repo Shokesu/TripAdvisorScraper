@@ -1,11 +1,81 @@
-{% set stylesheets = ['common.css', 'view_data.css'] %}
+{% set stylesheets = ['common.css', 'view_data.css', 'log_console.css'] %}
 {% set header_scripts = [] %}
-{% set footer_scripts = ['jquery.min.js', 'gmaps.js'] %}
+{% set footer_scripts = ['jquery.min.js', 'view_data.js', 'log_console.js'] %}
 {% set title = 'Scraping TripAdvisor...' %}
 {% extends "base.html" %}
 {% block content %}
 
-<h1>Scraping hotels at "{{current_search_location}}"</h1>
-<div id="map">
-</div>
+<h1>Scraping hotels at "{{location}}"</h1>
+<table>
+    <tr>
+        <td rowspan="2" id="map-container">
+            <div id="map">
+            </div>
+        </td>
+        <td id="info-table-container">
+            <table id="info" class="info-table">
+                <thead>
+                    <tr>
+                        <th colspan="2">
+                            Scraped items info
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            Number of hotels:
+                        </td>
+                        <td id="num-hotels">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Number of deals:
+                        </td>
+                        <td id="num-deals">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Number of reviews:
+                        </td>
+                        <td id="num-reviews">
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table id="status-info" class="info-table">
+                <thead>
+                    <tr>
+                        <th colspan="2">
+                            Scraper status info
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            Scrapy Spider Status:
+                        </td>
+                        <td id="status">
+                            <span class="status-init-label">Initializing</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td id="log-console-container">
+            <div class="shell-wrap" id="log-console">
+                <p class="shell-top-bar">Log from scrapy</p>
+                <ul class="shell-body" id="logs">
+                </ul>
+            </div>
+        </td>
+    </tr>
+</table>
+
 {% endblock %}
