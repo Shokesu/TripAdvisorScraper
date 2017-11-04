@@ -86,8 +86,10 @@ initMap = function() {
 
         // Comprobamos si el scraper ha finalizado. En tal caso, no hacemos más requests al servidor
         // para pedir datos.
-        if(scraper_finished)
+        if(scraper_finished) {
             clearInterval(get_data_interval);
+            $(document).trigger('scraper_finished');
+        }
     }
 
 

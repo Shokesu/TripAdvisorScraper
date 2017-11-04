@@ -26,12 +26,16 @@ Este script implementa la lógica de los botones para descargar los datos escrap
 
 
 $(document).ready(function() {
-    $('#download-all-data').click(function() {
-        $('#download-data-panel-info').html('<p>Get all scraped data from TripAdvisor</p>');
-    });
-
     $('#download-data').click(function() {
         $('#download-data-panel-info').html('<p>Get current avaliable scraped data from TripAdvisor</p>');
+    });
+    $('#download-all-data').addClass('disabled');
+    $(document).on('scraper_finished', function() {
+        $('#download-all-data').removeClass('disabled');
+        $('#download-all-data').addClass('open_button');
+        $('#download-all-data').click(function() {
+            $('#download-data-panel-info').html('<p>Get all scraped data from TripAdvisor</p>');
+        });
     });
 });
 
