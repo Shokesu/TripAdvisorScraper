@@ -21,6 +21,20 @@ Ejecutar esté código antes de instalar los requerimientos:
 venv -p /usr/bin/python3 my_venv
 source my_venv/bin/activate
 ```
+Por último, para que la librería Splash funcione correctamente con Scrapy, es necesario instalar un pequeño
+servidor proxy para que procese el código JS al hacer las requests, antes de scrapear las páginas. 
+Una forma sencilla de hacerlo es usando Docker:
+
+```
+sudo docker pull scrapinghub/splash
+sudo docker run --net="host" -p 5023:5023 -p 8050:8050 -p 8051:8051 scrapinghub/splash
+```
+La primera línea de código descarga la imágen del servidor proxy. Solo es necesario ejecutarla una vez. La siguiente pone
+en marcha el proxy sobre los puertos 8050, 8051 y 5023. La opción --net="host" permite compartir el interfaz de red con el
+anfitrión (internamente le permite hacer requests HTTP cuando hay páginas que son redirecciones).
+
+Si cambias la configuración de puertos, asegurate de modificar la variable de configuración "SPLASH_URL" en este fichero:
+https://github.com/Shokesu/TripAdvisorScraper/blob/master/TripAdvisorScraper/settings.py
 
 
 # Uso
@@ -77,4 +91,19 @@ Para ver un listado completo de todos los parámetros de configuración, ver el 
 https://github.com/Shokesu/TripAdvisorScraper/blob/master/TripAdvisorScraper/config/default.conf.py
 
 
+
+
+# Cliente WEB
+
+También está disponible un pequeño cliente web que puede usarse para depurar el scraper.
+```
+cd TripAdvisorScraper
+./scraper-web-client.sh
+```
+El código anterior inicializará el cliente web.
+Abre el navegador e introduce la url http://localhost:5000/
+
+![Web Client](/docs/screenshots/web-client.png?raw=true "Optional Title")
+
+ 
 
