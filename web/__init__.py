@@ -47,13 +47,25 @@ static_folder = join(root_path, 'static')
 template_folder = join(root_path, 'templates')
 
 
-app = Flask('TripAdvisorFlaskApp',
-            static_folder=static_folder,
-            static_url_path = '/static',
-            template_folder=template_folder,
-            instance_relative_config=False,
-            root_path=root_path)
 
+class FlaskProxy(Flask):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def run(self, *args, **kwargs):
+        self.init()
+        super().run(*args, **kwargs)
+
+    def init(self):
+        GlobalConfig().override(Config.load_from_file(join(dirname(__file__), 'scraper.conf.py')))
+
+
+app = FlaskProxy('TripAdvisorFlaskApp',
+                 static_folder=static_folder,
+                 static_url_path = '/static',
+                 template_folder=template_folder,
+                 instance_relative_config=False,
+                 root_path=root_path)
 
 
 @app.route('/')
@@ -216,7 +228,6 @@ def get_sqlite():
     return response
 
 if __name__ == '__main__':
-    GlobalConfig().override(Config.load_from_file(join(dirname(__file__), 'scraper.conf.py')))
     '''
     Para iniciar el servidor Flask, ejecutar este script
     '''
