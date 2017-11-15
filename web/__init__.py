@@ -35,16 +35,16 @@ from TripAdvisorScraper.item_db import TripAdvisorDB
 
 
 # Raíz de la aplicación flask
-root_path = dirname(__file__)
+root_path = abspath(dirname(__file__))
 
 
 # Configuración de directorios de recursos
 
 # Directorio donde se buscarán recursos estáticos.
-static_folder = abspath(join(root_path, 'static'))
+static_folder = join(root_path, 'static')
 
 # Directorio donde se encuentran los templates
-template_folder = abspath(join(root_path, 'templates'))
+template_folder = join(root_path, 'templates')
 
 
 
