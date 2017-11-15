@@ -49,6 +49,7 @@ template_folder = join(root_path, 'templates')
 
 app = Flask('TripAdvisorFlaskApp',
             static_folder=static_folder,
+            static_url_path = '/static',
             template_folder=template_folder,
             instance_relative_config=False,
             root_path=root_path)
