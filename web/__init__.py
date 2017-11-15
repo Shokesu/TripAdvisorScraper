@@ -25,7 +25,7 @@ Este script ejecuta el cliente web del scraper de TripAdvisor usando el framewor
 '''
 
 from flask import Flask, render_template, request, redirect, make_response
-from os.path import dirname, join
+from os.path import dirname, join, abspath
 import json
 import sqlite3 as sqlite
 from web.scraper import TripAdvisorScraper
@@ -41,10 +41,10 @@ root_path = dirname(__file__)
 # Configuración de directorios de recursos
 
 # Directorio donde se buscarán recursos estáticos.
-static_folder = join(root_path, 'static')
+static_folder = abspath(join(root_path, 'static'))
 
 # Directorio donde se encuentran los templates
-template_folder = join(root_path, 'templates')
+template_folder = abspath(join(root_path, 'templates'))
 
 
 
